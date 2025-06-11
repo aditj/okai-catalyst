@@ -1,0 +1,114 @@
+---
+description: When the task is dealing with designing or changing frontend.
+globs: 
+alwaysApply: false
+---
+
+### **Catalyst Application: Design Guidelines & Principles**
+
+This document outlines the design system, user experience principles, and visual rules for the Catalyst platform. The goal is to create an interface that is trustworthy, clear, and focused, enabling users to perform complex analytical tasks with minimal friction.
+
+---
+
+### **I. Core Design Philosophy**
+
+These are the foundational beliefs that guide every design decision.
+
+1.  **Clarity Above All:** The primary goal is to communicate information effectively. We will always choose clarity over clever or trendy design elements. Every component, label, and layout must be unambiguous.
+2.  **Professional & Trustworthy:** The application handles sensitive employee evaluation data. The design must project stability, security, and professionalism. The interface should feel like a precise instrument, not a social app.
+3.  **Focused & Uncluttered:** The test-taker's primary task requires deep concentration. The UI must be minimalist, removing all non-essential elements to create a "distraction-free" assessment environment. We will use white space strategically to guide focus.
+4.  **Data-Forward & Insightful:** The app's value is in the data it presents. Dashboards, reports, and analytical feedback are not afterthoughts; they are core features. Data visualizations must be clear, accurate, and easy to interpret.
+
+---
+
+### **II. User Experience (UX) Principles**
+
+These principles define how the application should feel and behave.
+
+1.  **Guided & Sequential Journey:** The multi-stage assessment must feel like a logical, guided process.
+    * **Rule:** Implement clear progress indicators (e.g., "Stage 3 of 6: Root Cause Analysis") that are always visible during the assessment.
+    * **Rule:** Each stage should have one primary objective. Avoid asking the user to perform multiple distinct tasks on a single screen.
+
+2.  **Minimize Cognitive Load:** Users should be able_ to focus on their analysis, not on figuring out the interface.
+    * **Rule:** Information should be revealed progressively. For example, in the "Information Gathering" stage, data is not presented upfront but must be actively "requested" by the user through clicks, simulating a real-world investigation.
+    * **Rule:** Break down complex forms into smaller, logical sections.
+
+3.  **Instant & Clear Feedback:** The user must always understand the system's state.
+    * **Rule:** All primary actions (e.g., "Submit Analysis") must trigger immediate visual feedback, such as a disabled button state and a loading indicator (e.g., a spinner).
+    * **Rule:** Implement clear and concise success messages (e.g., "Analysis submitted successfully") and helpful error messages (e.g., "Connection lost. Your progress has been saved.").
+
+4.  **Role-Based Experience:** The interface must be tailored to the user's role.
+    * **Rule:** The **Administrator/HR View** will be a dashboard-centric experience, prioritizing data visualization, user management, and report generation.
+    * **Rule:** The **Candidate/Test-Taker View** will be a linear, focused, and locked-down experience designed to eliminate distractions and guide the user through the assessment workflow.
+
+---
+
+### **III. Visual Design (UI) System**
+
+These are the specific rules for the application's look and feel.
+
+1.  **Color Palette:** The palette is professional, accessible, and used consistently to convey meaning.
+    * **Primary (Actions & Branding):** Deep Blue (`#0A2E5D`) - Used for primary buttons, active links, and headers.
+    * **Accent (Highlights & Success):** Teal (`#008080`) - Used for highlighting selections, positive feedback, and accents in charts.
+    * **Neutrals (Backgrounds & Text):**
+        * Background: White (`#FFFFFF`) / Light Gray (`#F5F7FA`)
+        * Text: Near Black (`#121212`)
+        * Borders & Dividers: Light Gray (`#DDE1E6`)
+    * **Feedback (Semantic Colors):**
+        * Error: Red (`#D93025`)
+        * Warning: Yellow (`#FBC02D`)
+        * Success: Green (`#1E8E3E`)
+
+2.  **Typography:** The typography system ensures readability and clear visual hierarchy.
+    * **Font:** **Inter**. It's a clean, highly readable sans-serif font suitable for UI design.
+    * **Hierarchy:**
+        * **H1 (Page Title):** 32px, Bold
+        * **H2 (Section Title):** 24px, Bold
+        * **H3 (Card Title):** 20px, Semi-Bold
+        * **Body (Paragraphs):** 16px, Regular
+        * **Labels & Microcopy:** 14px, Regular
+        * **Button Text:** 16px, Semi-Bold
+
+3.  **Layout & Spacing:** We use a consistent grid system to create visual harmony.
+    * **Rule:** Adhere to an **8-point grid system**. All margins, padding, and element dimensions should be multiples of 8px (e.g., 8, 16, 24, 32px).
+    * **Rule:** Maintain generous white space around text blocks and interactive elements to improve readability and reduce clutter. A main content container should have a max-width of ~960px for optimal line length.
+
+4.  **Iconography:** Icons must be simple, clear, and consistent.
+    * **Rule:** Use a single, professional icon library. **Material Symbols (Outlined style)** is recommended.
+    * **Rule:** Icons used as interactive elements must always be accompanied by a text label. Do not rely on icons alone to convey meaning.
+
+5.  **Component Styles:**
+    * **Buttons:**
+        * *Primary:* Solid fill (Primary Blue), white text.
+        * *Secondary:* Outlined (Primary Blue), blue text.
+        * *Tertiary/Text:* No border or fill, blue text.
+        * All buttons must have clear `hover`, `focus`, and `disabled` states.
+    * **Forms & Inputs:**
+        * Text areas and input fields should have a light border, increased border thickness on focus, and a clear red border for error states.
+        * Labels must always be visible and clearly associated with their input.
+    * **Cards:** Use cards with subtle shadows and a light border-radius (8px) to group related content, such as the case study brief or the final results report.
+
+---
+
+### **IV. Content & Tone**
+
+This governs all text within the application.
+
+1.  **Voice:** The application's voice is **Professional, Encouraging, and Objective.**
+    * **Professional:** Use clear, correct terminology.
+    * **Encouraging:** Frame instructions positively (e.g., "Let's begin the analysis").
+    * **Objective:** Feedback should be constructive and impartial, focusing on the analysis, not the person.
+
+2.  **Terminology:**
+    * **Rule:** Be consistent. Always use "Case Study," "Root Cause Analysis," "Solution Proposal," etc. Do not use synonyms interchangeably.
+    * **Rule:** All LLM-generated content (case studies, feedback) must be reviewed and constrained by prompts that enforce the defined tone and voice.
+
+### **V. Accessibility**
+
+The application must be usable by everyone, regardless of ability. We will target **WCAG 2.1 AA** compliance.
+
+1.  **Color Contrast:** All text must have a minimum contrast ratio of **4.5:1** against its background. Use a contrast checker tool during design and development.
+2.  **Keyboard Navigation:** All interactive elements (buttons, links, inputs) must be fully operable using the `Tab` key. The focus order must be logical.
+3.  **Screen Reader Support:** Use semantic HTML5 (`<main>`, `<nav>`, `<section>`, etc.) to define page structure. Use ARIA (Accessible Rich Internet Applications) attributes where necessary for complex components.
+4.  **Visible Focus:** The keyboard focus indicator must be a highly visible outline that is not disabled.
+5.  **Alternative Text:** All non-decorative images and icons must have descriptive `alt` text.
