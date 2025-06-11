@@ -1,0 +1,42 @@
+.case-study {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 24px;
+  margin: 20px 0;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.case-study-title {
+  color: #2c3e50;
+  margin-bottom: 16px;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.case-study-content {
+  color: #495057;
+  line-height: 1.6;
+  font-size: 1rem;
+}
+
+.case-study-content p {
+  margin: 0;
+}
+
+.case-study-loading {
+  text-align: center;
+  color: #6c757d;
+}
+
+.case-study-loading h2 {
+  color: #495057;
+  margin-bottom: 8px;
+}
+
+.case-study-loading p {
+  margin: 0;
+  font-style: italic;
+} 
