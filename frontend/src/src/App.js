@@ -11,12 +11,12 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [caseStudy, setCaseStudy] = useState('');
   const [isLoadingCase, setIsLoadingCase] = useState(false);
-
+  const url = "https://okai-catalyst.onrender.com:8000"
   // Function to fetch a new case study (for single evaluation)
   const fetchNewCaseStudy = async () => {
     setIsLoadingCase(true);
     try {
-      const response = await fetch('http://localhost:8000/api/generate-case');
+      const response = await fetch(`${url}/api/generate-case`);
       if (response.ok) {
         const data = await response.json();
         setCaseStudy(data.caseStudy);
@@ -36,7 +36,7 @@ function App() {
   const handleSubmit = async (analysisText) => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/api/evaluate', {
+      const response = await fetch(`${url}/api/evaluate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
