@@ -277,22 +277,26 @@ async def generate_multipart_case():
             raise HTTPException(status_code=500, detail="AI model not configured")
         
         # Enhanced case study generation prompt
-        prompt = """
-You are a senior manufacturing process expert. Create a realistic, complex manufacturing case study that will challenge problem-solving skills across multiple dimensions.
+        prompt = """You are a senior manufacturing process expert. Create a realistic, complex manufacturing case study that will challenge problem-solving skills across multiple dimensions.
 
 Write a case study (200-250 words) about a significant operational problem in a modern manufacturing facility.
 
 The problem should involve multiple interconnected issues such as:
+
+- New products introduced on Assembly Line 
 - Quality defects with unclear root causes
-- Production inefficiencies or bottlenecks
-- Equipment reliability issues
+-  Unevenness of Cycle time of different products 
 - Process control problems
-- Supply chain or material issues
-- Worker safety or ergonomic concerns
-- Cost overruns or waste
+- Incoming material issues
+-  Ergonomic concerns
+-  Rejection cost increase 
 
 Requirements:
-- Start with "Case Study: [Descriptive Title]"
+
+Start with "Case Study: [New Model Manufacture on Production Line]”
+Company: Subros India, a medium sized manufacturing company primarily producing automotive components.
+Metric: Yield Ratio
+
 - Include specific, realistic data (percentages, quantities, timeframes, costs)
 - Mention multiple departments/stakeholders affected
 - Include both immediate symptoms and underlying issues
@@ -300,8 +304,7 @@ Requirements:
 - Do NOT include any solutions or hints about causes
 - End with "Your task is to analyze this problem systematically through a structured approach."
 
-Make it realistic for a mid-to-large manufacturing operation with modern equipment and processes.
-        """
+Make it realistic for a mid-to-large manufacturing operation with modern equipment and processes."""
 
         # Generate response with retry logic
         max_retries = 3
