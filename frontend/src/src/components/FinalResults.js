@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import './FinalResults.css';
 
+// Base URL for backend API
+const API_BASE_URL = 'https://okai-catalyst.onrender.com:8000';
+
 function FinalResults({ sessionId, partEvaluations, onRetry }) {
   const [finalEvaluation, setFinalEvaluation] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -12,7 +15,7 @@ function FinalResults({ sessionId, partEvaluations, onRetry }) {
   const fetchFinalEvaluation = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`http://localhost:8000/api/final-evaluation/${sessionId}`);
+      const response = await fetch(`${API_BASE_URL}/api/final-evaluation/${sessionId}`);
       if (response.ok) {
         const data = await response.json();
         setFinalEvaluation(data);

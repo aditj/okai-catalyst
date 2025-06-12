@@ -3,6 +3,9 @@ import './MultiPartEvaluation.css';
 import PartComponent from './PartComponent';
 import FinalResults from './FinalResults';
 
+// Base URL for backend API
+const API_BASE_URL = 'https://okai-catalyst.onrender.com:8000';
+
 // Helper function to format case study content for better readability
 const formatCaseStudyContent = (content) => {
   if (!content) return null;
@@ -57,7 +60,7 @@ function MultiPartEvaluation() {
   const fetchCaseStudy = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/api/generate-multipart-case');
+      const response = await fetch(`${API_BASE_URL}/api/generate-multipart-case`);
       if (response.ok) {
         const data = await response.json();
         setSessionData(data);
@@ -75,7 +78,7 @@ function MultiPartEvaluation() {
   const handlePartSubmit = async (partId, responses) => {
     setIsSubmitting(true);
     try {
-      const response = await fetch('http://localhost:8000/api/submit-part', {
+      const response = await fetch(`${API_BASE_URL}/api/submit-part`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
