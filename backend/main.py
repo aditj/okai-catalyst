@@ -879,4 +879,5 @@ Please provide only the JSON response without any additional text or formatting.
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info") 
+    port = int(os.environ.get("PORT", 4000))
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info") 
