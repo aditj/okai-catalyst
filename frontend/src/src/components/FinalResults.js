@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './FinalResults.css';
 
 // Base URL for backend API
-const API_BASE_URL = 'https://okai-catalyst.onrender.com:8000';
+const API_BASE_URL = 'https://okai-catalyst.onrender.com';
 
 function FinalResults({ sessionId, partEvaluations, onRetry }) {
   const [finalEvaluation, setFinalEvaluation] = useState(null);

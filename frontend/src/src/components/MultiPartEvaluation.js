@@ -4,7 +4,7 @@ import PartComponent from './PartComponent';
 import FinalResults from './FinalResults';
 
 // Base URL for backend API
-const API_BASE_URL = 'https://okai-catalyst.onrender.com:8000';
+const API_BASE_URL = 'https://okai-catalyst.onrender.com';
 
 // Helper function to format case study content for better readability
 const formatCaseStudyContent = (content) => {
