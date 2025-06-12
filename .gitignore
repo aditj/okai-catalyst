@@ -2,3 +2,4 @@
 backend/venv/*
 */venv/*
 frontend/src/node_modules/*
+frontend/src/node_modules

@@ -439,14 +439,14 @@ async def submit_part(request: PartSubmissionRequest):
         
         rubrics_text = ""
         for key, description in part["rubrics"].items():
-            rubrics_text += f"\n- {key.replace('_', ' ').title()}: {description}"
+            rubrics_text += f"\n Rubric Text:  {key.replace('_', ' ').title()}: {description}"
+            rubrics_text += f"\n Rubric Label: {key}"
         
         prompt = f"""
 You are an expert Operational Excellence consultant with 20+ years of experience evaluating manufacturing problem-solving capabilities.
 
 EVALUATION CONTEXT:
 Part {request.partId}: {part['title']}
-Description: {part['description']}
 
 ORIGINAL CASE STUDY:
 {case_study}
@@ -489,7 +489,7 @@ Format as JSON:
 
 Respond only with valid JSON, no additional text.
         """
-
+        print(prompt)
         # Generate evaluation with retry logic
         max_retries = 3
         evaluation_data = None
@@ -879,4 +879,4 @@ Please provide only the JSON response without any additional text or formatting.
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info", reload=True) 
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info") 
