@@ -154,9 +154,9 @@ EVALUATION_PARTS = [
             }
         ],
         "rubrics": {
-            "data_focus": "How well did they identify relevant quantitative metrics and explain their importance? Score 1-10 only.",
-            "stakeholder_identification": "Did they identify appropriate people with clear rationale for what insights each could provide? Score 1-10 only.",
-            "observation_skills": "How systematic and comprehensive is their observation plan? Score 1-10 only."
+            "data_focus": "How well did they identify relevant quantitative metrics and explain their importance?",
+            "stakeholder_identification": "Did they identify appropriate people with clear rationale for what insights each could provide?",
+            "observation_skills": "How systematic and comprehensive is their observation plan?"
         },
         "passingScore": 5.0
     },
@@ -185,9 +185,9 @@ EVALUATION_PARTS = [
             }
         ],
         "rubrics": {
-            "systematic_thinking": "Did they use systematic frameworks and demonstrate structured thinking? Score 1-10 only.",
-            "methodology": "Did they choose appropriate analysis methods and explain their reasoning? Score 1-10 only.",
-            "validation_approach": "How well did they plan to test and validate their hypotheses? Score 1-10 only."
+            "systematic_thinking": "Did they use systematic frameworks and demonstrate structured thinking?",
+            "methodology": "Did they choose appropriate analysis methods and explain their reasoning?",
+            "validation_approach": "How well did they plan to test and validate their hypotheses?"
         },
         "passingScore": 5.0
     },
@@ -216,9 +216,9 @@ EVALUATION_PARTS = [
             }
         ],
         "rubrics": {
-            "solution_relevance": "How directly and effectively do the solutions address the identified root causes? Score 1-10 only.",
-            "practicality": "How realistic, detailed, and implementable are the solutions and plans? Score 1-10 only.",
-            "risk_awareness": "Did they identify realistic risks and provide thoughtful mitigation strategies? Score 1-10 only."
+            "solution_relevance": "How directly and effectively do the solutions address the identified root causes?",
+            "practicality": "How realistic, detailed, and implementable are the solutions and plans?",
+            "risk_awareness": "Did they identify realistic risks and provide thoughtful mitigation strategies?"
         },
         "passingScore": 5.0
     },
@@ -247,9 +247,9 @@ EVALUATION_PARTS = [
             }
         ],
         "rubrics": {
-            "measurement_focus": "Did they identify appropriate leading and lagging indicators for success? Score 1-10 only.",
-            "realistic_timeline": "Is their timeline realistic with proper justification for timeframes? Score 1-10 only.",
-            "sustainability": "How well did they address long-term sustainability and continuous improvement? Score 1-10 only."
+            "measurement_focus": "Did they identify appropriate leading and lagging indicators for success?",
+            "realistic_timeline": "Is their timeline realistic with proper justification for timeframes?",
+            "sustainability": "How well did they address long-term sustainability and continuous improvement?"
         },
         "passingScore": 5.0
     }

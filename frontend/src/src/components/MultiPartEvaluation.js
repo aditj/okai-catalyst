@@ -161,13 +161,6 @@ function MultiPartEvaluation() {
 
   return (
     <div className="multi-part-evaluation">
-      <div className="case-study-section">
-        <h2>Manufacturing Case Study</h2>
-        <div className="case-study-content">
-          {formatCaseStudyContent(sessionData.caseStudy)}
-        </div>
-      </div>
-
       <div className="progress-section">
         <h3>Evaluation Progress</h3>
         <div className="progress-bar">
@@ -187,6 +180,14 @@ function MultiPartEvaluation() {
           ))}
         </div>
       </div>
+      <div className="case-study-section">
+        <h2>Manufacturing Case Study</h2>
+        <div className="case-study-content">
+          {formatCaseStudyContent(sessionData.caseStudy)}
+        </div>
+      </div>
+
+      
 
       <div className="current-part-section">
         {sessionData.parts.map(part => (
