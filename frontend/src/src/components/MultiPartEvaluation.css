@@ -71,6 +71,20 @@
   background: rgba(255, 255, 255, 0.6);
 }
 
+.case-study-markdown {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 17px;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.95);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  text-align: left;
+  overflow-x: auto;
+}
+
 .progress-section {
   margin-bottom: 30px;
 }
@@ -167,6 +181,27 @@
   color: #28a745;
 }
 
+.progress-info {
+  background: #e8f4f8;
+  border: 1px solid #bee5eb;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 16px;
+  text-align: center;
+}
+
+.progress-info p {
+  margin: 0;
+  color: #0c5460;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.progress-current {
+  color: #007bff;
+  font-weight: 600;
+}
+
 .current-part-section {
   background: white;
   border-radius: 15px;
@@ -202,9 +237,17 @@
     font-size: 24px;
   }
   
+  .case-study-content {
+    padding: 20px;
+  }
+  
+  .case-study-content p {
+    font-size: 16px;
+  }
+  
   .progress-bar {
     flex-direction: column;
-    gap: 15px;
+    gap: 20px;
   }
   
   .progress-step:not(:last-child)::after {
@@ -212,6 +255,15 @@
   }
   
   .step-title {
+    font-size: 13px;
     max-width: none;
+  }
+
+  .progress-info {
+    padding: 12px;
+  }
+
+  .progress-info p {
+    font-size: 14px;
   }
 } 

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import './PartComponent.css';
+import AudioRecorder from './AudioRecorder';
 
 function PartComponent({ part, onSubmit, isSubmitting, evaluation }) {
   const [responses, setResponses] = useState({});
+  const [audioData, setAudioData] = useState(null);
 
   const handleResponseChange = (questionId, value) => {
     setResponses(prev => ({
@@ -11,20 +13,46 @@ function PartComponent({ part, onSubmit, isSubmitting, evaluation }) {
     }));
   };
 
+  const handleAudioData = (base64Data) => {
+    setAudioData(base64Data);
+    // For audio questions, we set a placeholder response
+    if (base64Data) {
+      setResponses(prev => ({
+        ...prev,
+        'q5_verbal': 'Audio recording submitted'
+      }));
+    } else {
+      setResponses(prev => {
+        const newResponses = { ...prev };
+        delete newResponses['q5_verbal'];
+        return newResponses;
+      });
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Check if all questions are answered
-    const unansweredQuestions = part.questions.filter(
-      q => !responses[q.id] || responses[q.id].trim() === ''
-    );
-
-    if (unansweredQuestions.length > 0) {
-      alert(`Please answer all questions before submitting. Missing: ${unansweredQuestions.map(q => q.question.substring(0, 50) + '...').join(', ')}`);
+    // Special validation for Part 5 (audio)
+    if (part.id === 5) {
+      if (!audioData) {
+        alert('Please record your 2-minute explanation before submitting.');
+        return;
+      }
+      // Submit with audio data
+      onSubmit(part.id, responses, audioData);
       return;
     }
+    
+    // Add placeholder texts for empty responses
+    const processedResponses = { ...responses };
+    part.questions.forEach(question => {
+      if (!processedResponses[question.id] || processedResponses[question.id].trim() === '') {
+        processedResponses[question.id] = `[No response provided for: ${question.question.substring(0, 100)}...]`;
+      }
+    });
 
-    onSubmit(part.id, responses);
+    onSubmit(part.id, processedResponses);
   };
 
   if (evaluation && !evaluation.canProceed) {
@@ -37,6 +65,16 @@ function PartComponent({ part, onSubmit, isSubmitting, evaluation }) {
 
         <div className="evaluation-results">
           <h4>Evaluation Results</h4>
+          
+          {evaluation.transcription && (
+            <div className="transcription-section">
+              <h5>Audio Transcription</h5>
+              <div className="transcription-content">
+                <p>{evaluation.transcription}</p>
+              </div>
+            </div>
+          )}
+          
           <div className="scores-grid">
             {Object.entries(evaluation.scores).map(([rubric, score]) => (
               <div key={rubric} className="score-item">
@@ -81,14 +119,29 @@ function PartComponent({ part, onSubmit, isSubmitting, evaluation }) {
               <span className="question-number">Question {index + 1}:</span>
               <span className="question-text">{question.question}</span>
             </label>
-            <textarea
-              className="question-textarea"
-              placeholder="Enter your detailed response here..."
-              value={responses[question.id] || ''}
-              onChange={(e) => handleResponseChange(question.id, e.target.value)}
-              rows="4"
-              disabled={isSubmitting}
-            />
+            
+            {question.type === 'audio' ? (
+              <div className="audio-question">
+                <AudioRecorder 
+                  onAudioData={handleAudioData}
+                  disabled={isSubmitting}
+                />
+                {question.instructions && (
+                  <div className="question-instructions">
+                    <p><strong>Instructions:</strong> {question.instructions}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <textarea
+                className="question-textarea"
+                placeholder="Enter your detailed response here... (Optional: You can skip questions and continue if needed)"
+                value={responses[question.id] || ''}
+                onChange={(e) => handleResponseChange(question.id, e.target.value)}
+                rows="4"
+                disabled={isSubmitting}
+              />
+            )}
           </div>
         ))}
 
@@ -101,6 +154,10 @@ function PartComponent({ part, onSubmit, isSubmitting, evaluation }) {
               </div>
             ))}
           </div>
+        </div>
+
+        <div className="submission-info">
+          <p><strong>Note:</strong> All questions are optional. If you skip any questions, placeholder text will be added automatically. You can always return to provide more detailed responses.</p>
         </div>
 
         <button 

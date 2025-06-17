@@ -2,45 +2,20 @@ import React, { useState, useEffect } from 'react';
 import './MultiPartEvaluation.css';
 import PartComponent from './PartComponent';
 import FinalResults from './FinalResults';
-
-// Base URL for backend API
 const API_BASE_URL = 'https://okai-catalyst.onrender.com';
+// const API_BASE_URL = 'http://localhost:4000';
+// Base URL for backend API
 
-// Helper function to format case study content for better readability
+
+// Helper function to format case study content as a markdown block
 const formatCaseStudyContent = (content) => {
   if (!content) return null;
   
-  // Split content into sentences for better formatting
-  const sentences = content.split(/(?<=[.!?])\s+/);
-  const paragraphs = [];
-  let currentParagraph = [];
-  
-  sentences.forEach((sentence, index) => {
-    currentParagraph.push(sentence);
-    
-    // Create a new paragraph every 3-4 sentences or at logical breaks
-    if (currentParagraph.length >= 3 || 
-        sentence.includes('AeroGlide Manufacturing') ||
-        sentence.includes('Production efficiency') ||
-        sentence.includes('Process Engineering') ||
-        sentence.includes('Shop floor workers') ||
-        sentence.includes('Your task is to')) {
-      
-      paragraphs.push(currentParagraph.join(' '));
-      currentParagraph = [];
-    }
-  });
-  
-  // Add any remaining sentences
-  if (currentParagraph.length > 0) {
-    paragraphs.push(currentParagraph.join(' '));
-  }
-  
-  return paragraphs.map((paragraph, index) => (
-    <p key={index} style={{ marginBottom: index < paragraphs.length - 1 ? '16px' : '0' }}>
-      {paragraph}
-    </p>
-  ));
+  return (
+    <pre className="case-study-markdown">
+      {content}
+    </pre>
+  );
 };
 
 function MultiPartEvaluation() {
@@ -75,19 +50,26 @@ function MultiPartEvaluation() {
     }
   };
 
-  const handlePartSubmit = async (partId, responses) => {
+  const handlePartSubmit = async (partId, responses, audioData = null) => {
     setIsSubmitting(true);
     try {
+      const requestBody = {
+        partId,
+        responses,
+        sessionId: sessionData.sessionId
+      };
+
+      // Add audio data for Part 5
+      if (audioData) {
+        requestBody.audioData = audioData;
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/submit-part`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          partId,
-          responses,
-          sessionId: sessionData.sessionId
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -107,7 +89,7 @@ function MultiPartEvaluation() {
         setCompletedParts(prev => [...prev, partId]);
         
         // Move to next part or show final results
-        if (partId < 4) {
+        if (partId < 5) {
           setCurrentPart(partId + 1);
         } else {
           // All parts completed, show final results
@@ -167,7 +149,7 @@ function MultiPartEvaluation() {
       <div className="progress-section">
         <h3>Evaluation Progress</h3>
         <div className="progress-bar">
-          {[1, 2, 3, 4].map(partNum => (
+          {[1, 2, 3, 4, 5].map(partNum => (
             <div 
               key={partNum}
               className={`progress-step ${
@@ -177,20 +159,28 @@ function MultiPartEvaluation() {
             >
               <span className="step-number">{partNum}</span>
               <span className="step-title">
-                {sessionData.parts.find(p => p.id === partNum)?.title}
+                {sessionData.parts.find(p => p.id === partNum)?.title || 
+                 (partNum === 5 ? 'Verbal Explanation' : `Part ${partNum}`)}
               </span>
             </div>
           ))}
         </div>
+        <div className="progress-info">
+          <p>
+            <strong>Estimated Time:</strong> {sessionData.estimatedTime || '35-50 minutes'} 
+            <span className="progress-current">
+              {' '} • Currently on Part {currentPart} of 5
+            </span>
+          </p>
+        </div>
       </div>
+      
       <div className="case-study-section">
         <h2>Manufacturing Case Study</h2>
         <div className="case-study-content">
           {formatCaseStudyContent(sessionData.caseStudy)}
         </div>
       </div>
-
-      
 
       <div className="current-part-section">
         {sessionData.parts.map(part => (

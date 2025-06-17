@@ -93,6 +93,26 @@
   color: #999;
 }
 
+/* Audio Question Styles */
+.audio-question {
+  margin-top: 10px;
+}
+
+.question-instructions {
+  background: #e8f4f8;
+  border: 1px solid #bee5eb;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.question-instructions p {
+  margin: 0;
+  color: #0c5460;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 .rubrics-info {
   background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
   padding: 25px;
@@ -125,6 +145,22 @@
 .rubric-item strong {
   color: #333;
   text-transform: capitalize;
+}
+
+.submission-info {
+  background: #e8f5e8;
+  border: 1px solid #c3e6c3;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 20px 0;
+  text-align: center;
+}
+
+.submission-info p {
+  margin: 0;
+  color: #2d5a2d;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .submit-part-button {
@@ -167,6 +203,44 @@
   color: #333;
   margin-bottom: 20px;
   font-size: 22px;
+}
+
+.transcription-section {
+  background: #f0f8ff;
+  border: 2px solid #007bff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 25px;
+}
+
+.transcription-section h5 {
+  color: #007bff;
+  margin: 0 0 15px 0;
+  font-size: 18px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.transcription-section h5::before {
+  content: "🎤";
+  font-size: 16px;
+}
+
+.transcription-content {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  border-left: 4px solid #007bff;
+}
+
+.transcription-content p {
+  margin: 0;
+  color: #333;
+  line-height: 1.6;
+  font-style: italic;
+  font-family: 'Georgia', serif;
 }
 
 .scores-grid {
@@ -248,19 +322,20 @@
 }
 
 .retry-part-button {
-  background: #dc3545;
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
   color: white;
   border: none;
-  padding: 12px 24px;
-  border-radius: 6px;
+  padding: 12px 25px;
+  border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .retry-part-button:hover {
-  background: #c82333;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220,53,69,0.3);
 }
 
 @media (max-width: 768px) {
@@ -282,5 +357,9 @@
   
   .scores-grid {
     grid-template-columns: 1fr;
+  }
+
+  .question-instructions {
+    padding: 12px;
   }
 } 

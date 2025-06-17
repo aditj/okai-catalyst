@@ -3,6 +3,7 @@ import './FinalResults.css';
 
 // Base URL for backend API
 const API_BASE_URL = 'https://okai-catalyst.onrender.com';
+// const API_BASE_URL = 'http://localhost:4000';
 
 function FinalResults({ sessionId, partEvaluations, onRetry }) {
   const [finalEvaluation, setFinalEvaluation] = useState(null);
@@ -18,13 +19,16 @@ function FinalResults({ sessionId, partEvaluations, onRetry }) {
       const response = await fetch(`${API_BASE_URL}/api/final-evaluation/${sessionId}`);
       if (response.ok) {
         const data = await response.json();
+        console.log('Final evaluation data:', data); // Debug log
         setFinalEvaluation(data);
       } else {
-        throw new Error('Failed to fetch final evaluation');
+        const errorText = await response.text();
+        console.error('Response error:', response.status, errorText);
+        throw new Error(`Failed to fetch final evaluation: ${response.status} - ${errorText}`);
       }
     } catch (error) {
       console.error('Error fetching final evaluation:', error);
-      alert('Error loading final evaluation.');
+      alert(`Error loading final evaluation: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -43,6 +47,24 @@ function FinalResults({ sessionId, partEvaluations, onRetry }) {
       case 'good': return '#17a2b8';
       case 'satisfactory': return '#ffc107';
       default: return '#dc3545';
+    }
+  };
+
+  const getPriorityColor = (priority) => {
+    switch(priority.toLowerCase()) {
+      case 'high': return '#dc3545';
+      case 'medium': return '#ffc107';
+      case 'low': return '#28a745';
+      default: return '#6c757d';
+    }
+  };
+
+  const getPriorityIcon = (priority) => {
+    switch(priority.toLowerCase()) {
+      case 'high': return '🔥';
+      case 'medium': return '⚡';
+      case 'low': return '📚';
+      default: return '📋';
     }
   };
 
@@ -102,6 +124,47 @@ function FinalResults({ sessionId, partEvaluations, onRetry }) {
           <p>{finalEvaluation.detailedFeedback}</p>
         </div>
       </div>
+
+      {finalEvaluation.toolRecommendations && Object.keys(finalEvaluation.toolRecommendations).length > 0 && (
+        <div className="tool-recommendations-section">
+          <h2>🛠️ Recommended Quality Management Tools</h2>
+          <div className="tool-recommendations-intro">
+            <p>Based on your performance analysis, here are specific quality management tools that can help strengthen your skills:</p>
+          </div>
+          <div className="tool-recommendations-grid">
+            {Object.entries(finalEvaluation.toolRecommendations).map(([toolName, details]) => (
+              <div key={toolName} className="tool-recommendation-card">
+                <div className="tool-header">
+                  <h3>{toolName}</h3>
+                  <div 
+                    className="priority-badge"
+                    style={{ backgroundColor: getPriorityColor(details.priority) }}
+                  >
+                    <span className="priority-icon">{getPriorityIcon(details.priority)}</span>
+                    <span className="priority-text">{details.priority} Priority</span>
+                  </div>
+                </div>
+                <div className="tool-content">
+                  <div className="tool-reason">
+                    <h4>Why This Tool?</h4>
+                    <p>{details.reason}</p>
+                  </div>
+                  <div className="tool-benefit">
+                    <h4>What You'll Gain</h4>
+                    <p>{details.specific_benefit}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="learning-path-note">
+            <div className="learning-path-content">
+              <h4>📈 Your Learning Path</h4>
+              <p>Start with <strong>High Priority</strong> tools first, as these address your most significant improvement areas. These tools are industry-standard methods used by quality professionals worldwide.</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="part-by-part-section">
         <h2>Part-by-Part Breakdown</h2>

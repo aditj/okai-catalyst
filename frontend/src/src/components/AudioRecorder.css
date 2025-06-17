@@ -1,0 +1,243 @@
+.audio-recorder {
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  margin: 16px 0;
+}
+
+.recording-controls {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+/* Record Button Styles */
+.record-button {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  padding: 16px 32px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  margin-bottom: 16px;
+  min-width: 200px;
+}
+
+.record-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+.record-button.recording {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  animation: pulse-recording 2s infinite;
+}
+
+.record-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@keyframes pulse-recording {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+/* Recording Indicator */
+.recording-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  background: white;
+  border-radius: 50%;
+  animation: pulse-dot 1s infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+/* Timer Section */
+.timer-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 24px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 8px;
+}
+
+.current-time {
+  color: #3b82f6;
+  font-family: 'Courier New', monospace;
+}
+
+.max-time {
+  color: #6b7280;
+  font-size: 18px;
+}
+
+.remaining-time {
+  font-size: 14px;
+  color: #ef4444;
+  font-weight: normal;
+  margin-left: 8px;
+}
+
+/* Recording Complete Section */
+.recording-complete {
+  text-align: center;
+}
+
+.success-message {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  padding: 16px 24px;
+  border-radius: 50px;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  display: inline-block;
+}
+
+.recording-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.reset-button {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  border: none;
+  border-radius: 25px;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.reset-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+}
+
+.reset-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Audio Playback */
+.audio-playback {
+  width: 100%;
+  max-width: 400px;
+  border-radius: 25px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Recording Instructions */
+.recording-instructions {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 16px;
+}
+
+.recording-instructions h4 {
+  color: #374151;
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.recording-instructions ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #6b7280;
+}
+
+.recording-instructions li {
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.recording-instructions li:last-child {
+  margin-bottom: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .audio-recorder {
+    padding: 16px;
+    margin: 12px 0;
+  }
+
+  .record-button {
+    padding: 14px 28px;
+    font-size: 16px;
+    min-width: 180px;
+  }
+
+  .timer-section {
+    font-size: 20px;
+  }
+
+  .max-time {
+    font-size: 16px;
+  }
+
+  .remaining-time {
+    font-size: 12px;
+  }
+
+  .success-message {
+    font-size: 16px;
+    padding: 14px 20px;
+  }
+
+  .recording-instructions {
+    padding: 16px;
+  }
+}
+
+/* Accessibility */
+.record-button:focus,
+.reset-button:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Animation for smooth transitions */
+.recording-controls > * {
+  transition: all 0.3s ease;
+}
+
+/* Error states */
+.audio-recorder.error {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.audio-recorder.error .recording-instructions {
+  background: #fee2e2;
+  border-color: #fca5a5;
+} 

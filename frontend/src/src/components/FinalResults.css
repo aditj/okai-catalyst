@@ -140,6 +140,174 @@
   color: #333;
 }
 
+/* Tool Recommendations Section */
+.tool-recommendations-section {
+  margin-bottom: 40px;
+  background: white;
+  padding: 30px;
+  border-radius: 15px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.tool-recommendations-section h2 {
+  color: #333;
+  margin: 0 0 20px 0;
+  font-size: 28px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.tool-recommendations-intro {
+  text-align: center;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  border-left: 4px solid #6f42c1;
+}
+
+.tool-recommendations-intro p {
+  margin: 0;
+  font-size: 16px;
+  color: #333;
+  line-height: 1.6;
+}
+
+.tool-recommendations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 25px;
+  margin-bottom: 30px;
+}
+
+.tool-recommendation-card {
+  background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+  border-radius: 15px;
+  padding: 25px;
+  border: 2px solid #e9ecef;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.tool-recommendation-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 35px rgba(0,0,0,0.15);
+  border-color: #6f42c1;
+}
+
+.tool-recommendation-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #6f42c1, #e83e8c);
+}
+
+.tool-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tool-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 20px;
+  font-weight: 600;
+  flex: 1;
+  min-width: 200px;
+}
+
+.priority-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 20px;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.priority-icon {
+  font-size: 14px;
+}
+
+.priority-text {
+  white-space: nowrap;
+}
+
+.tool-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.tool-reason, .tool-benefit {
+  background: #f8f9fa;
+  padding: 18px;
+  border-radius: 10px;
+  border-left: 4px solid transparent;
+}
+
+.tool-reason {
+  border-left-color: #17a2b8;
+}
+
+.tool-benefit {
+  border-left-color: #28a745;
+}
+
+.tool-reason h4, .tool-benefit h4 {
+  margin: 0 0 10px 0;
+  color: #333;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.tool-reason p, .tool-benefit p {
+  margin: 0;
+  color: #555;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.learning-path-note {
+  background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+  border-radius: 12px;
+  padding: 25px;
+  border-left: 4px solid #2196f3;
+  text-align: center;
+}
+
+.learning-path-content h4 {
+  margin: 0 0 15px 0;
+  color: #333;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.learning-path-content p {
+  margin: 0;
+  color: #555;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.learning-path-content strong {
+  color: #dc3545;
+  font-weight: 700;
+}
+
 .part-by-part-section {
   margin-bottom: 40px;
   background: white;
@@ -309,6 +477,24 @@
   
   .overall-scores-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .tool-recommendations-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .tool-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .tool-header h3 {
+    min-width: auto;
+  }
+  
+  .priority-badge {
+    align-self: flex-start;
   }
   
   .part-scores {
