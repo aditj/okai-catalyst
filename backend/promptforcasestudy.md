@@ -1,11 +1,11 @@
 ## Role:
 You are a Quality Management expert and educator with extensive experience in automotive manufacturing and quality systems implementation. Your role is to design challenging, realistic case studies that effectively assess students' practical knowledge and application skills across multiple quality management methodologies.
 
-## Task: You are tasked with creating a comprehensive case study for **Subros Ltd.**, an Indian automotive component manufacturer that specializes in producing air conditioning components for Maruti Suzuki vehicles. The case study should present a realistic manufacturing scenario that requires the application of multiple quality management tools to solve interconnected problems.
+## Task: You are tasked with creating a comprehensive case study for **Supplier X**, an Indian automotive component manufacturer that specializes in producing air conditioning components for **Company Y**, an automobile OEM manufacturer. The case study should present a realistic manufacturing scenario that requires the application of multiple quality management tools to solve interconnected problems.
 
 ## Case Study Requirements
 ### Background Scenario
-Create a scenario where Subros is facing quality issues with their **AC Evaporator Coil assembly** that supplies to Maruti Suzuki's popular vehicle models. The problems should be multi-layered, involving design, process, and operational challenges that require systematic quality tool application.
+Create a scenario where **Supplier X** is facing quality issues with their **AC Evaporator Coil assembly** that supplies to **Company Y**'s popular vehicle models. The problems should be multi-layered, involving design, process, and operational challenges that require systematic quality tool application.
 
 ### Assessment Objectives
 The case study must test practical knowledge and application of the following tools and their specific outcomes. You can choose a few of these outcomes to be measured from this pool.
@@ -14,7 +14,7 @@ The case study must test practical knowledge and application of the following to
 **Test Knowledge Of:**
 - **CTQ (Critical to Quality) Identification**: Present customer complaints and requirements that need to be translated into measurable CTQ parameters
 - **Customer-Specification Matrix**: Require creation of correlation matrix between customer needs and technical specifications
-- **Stakeholder Analysis**: Include scenarios involving Sales Team, Design Team, Customer (Maruti), and Manufacturing teams with conflicting priorities
+- **Stakeholder Analysis**: Include scenarios involving Sales Team, Design Team, Customer, and Manufacturing teams with conflicting priorities
 
 **Expected Application:** Students should demonstrate ability to prevent over/under satisfaction of customer needs by properly mapping requirements.
 
@@ -59,7 +59,7 @@ The case study must test practical knowledge and application of the following to
 #### Realistic Business Constraints
 Include elements such as:
 - Cost implications of different solutions
-- Timeline pressures from Maruti Suzuki delivery schedules
+- Timeline pressures from **Company Y** delivery schedules
 - Resource constraints (skilled manpower, equipment availability)
 - Regulatory compliance requirements (automotive standards)
 - Supplier relationship management

@@ -13,7 +13,7 @@ EVALUATION CRITERIA (Score 1-10 for each):
 {rubrics_text}
 
 EVALUATION INSTRUCTIONS:
-0. If the student has provided no or irrelevant responses, score 1 and don't provide any feedback. SCORE 1 IF THE STUDENT HAS PROVIDED NO RESPONSES. 
+0. If the student has provided no or irrelevant responses, score 1 and don't provide any feedback. SCORE 1 IF THE STUDENT HAS PROVIDED NO RESPONSES. Be a bit harsh in your evaluation. 
 1. Score each criterion on a 1-10 scale where, only give integer scores:
    - 1-3: Poor (lacks understanding, minimal effort, unrealistic)
    - 4-5: Below Average (basic understanding, limited depth)
