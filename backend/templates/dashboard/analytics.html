@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900">Performance Analytics</h1>
+    <p class="mt-2 text-gray-600">Deep insights into evaluation performance and training effectiveness</p>
+</div>
+
+<!-- Charts Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Daily Trends -->
+    <div class="card">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Daily Completion Trends</h3>
+        <div class="chart-container">
+            <canvas id="dailyTrendsChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Score Distribution -->
+    <div class="card">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Score Distribution</h3>
+        <div class="chart-container">
+            <canvas id="scoreDistributionChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Part Performance -->
+<div class="card mb-6">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4">Performance by Evaluation Part</h3>
+    <div class="chart-container">
+        <canvas id="partPerformanceChart"></canvas>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadAnalyticsData();
+});
+
+async function loadAnalyticsData() {
+    try {
+        const response = await fetch('/dashboard/api/analytics');
+        const data = await response.json();
+        
+        renderDailyTrends(data.daily_trends || {});
+        renderScoreDistribution(data.score_distribution || {});
+        renderPartPerformance(data.part_performance || {});
+        
+    } catch (error) {
+        console.error('Error loading analytics:', error);
+    }
+}
+
+function renderDailyTrends(dailyData) {
+    const ctx = document.getElementById('dailyTrendsChart').getContext('2d');
+    const dates = Object.keys(dailyData).sort();
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dates.map(date => new Date(date).toLocaleDateString()),
+            datasets: [{
+                label: 'Total Sessions',
+                data: dates.map(date => dailyData[date].total),
+                borderColor: chartColors.primary,
+                tension: 0.4
+            }, {
+                label: 'Completed Sessions',
+                data: dates.map(date => dailyData[date].completed),
+                borderColor: chartColors.success,
+                tension: 0.4
+            }]
+        },
+        options: chartDefaults
+    });
+}
+
+function renderScoreDistribution(scoreData) {
+    const ctx = document.getElementById('scoreDistributionChart').getContext('2d');
+    const ranges = scoreData.score_ranges || {};
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(ranges),
+            datasets: [{
+                label: 'Number of Evaluations',
+                data: Object.values(ranges),
+                backgroundColor: [
+                    chartColors.danger,
+                    chartColors.warning,
+                    chartColors.info,
+                    chartColors.success,
+                    chartColors.primary
+                ]
+            }]
+        },
+        options: chartDefaults
+    });
+}
+
+function renderPartPerformance(partData) {
+    const ctx = document.getElementById('partPerformanceChart').getContext('2d');
+    const partNames = ['Problem ID', 'Root Cause', 'Solutions', 'Implementation', 'Verbal'];
+    const partScores = [];
+    
+    for (let i = 1; i <= 5; i++) {
+        partScores.push(partData[i]?.average || 0);
+    }
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: partNames,
+            datasets: [{
+                label: 'Average Score',
+                data: partScores,
+                backgroundColor: chartColors.primary
+            }]
+        },
+        options: {
+            ...chartDefaults,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 10
+                }
+            }
+        }
+    });
+}
+</script>
+{% endblock %} 

@@ -1,0 +1,466 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="mb-8">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Evaluation Sessions</h1>
+            <p class="mt-2 text-gray-600">View and manage all evaluation sessions</p>
+        </div>
+        <div class="flex space-x-3">
+            <button onclick="exportSessions()" class="btn-secondary">
+                <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+                Export CSV
+            </button>
+            <button onclick="refreshSessions()" class="btn-primary">
+                <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i>
+                Refresh
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Filters and Search -->
+<div class="card mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Search Sessions</label>
+            <div class="relative">
+                <input type="text" id="searchInput" placeholder="Search by session ID..." 
+                       class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i>
+            </div>
+        </div>
+        
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+            <select id="statusFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">All Statuses</option>
+                <option value="completed">Completed</option>
+                <option value="in-progress">In Progress</option>
+            </select>
+        </div>
+        
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Performance</label>
+            <select id="performanceFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">All Performance Levels</option>
+                <option value="Excellent">Excellent</option>
+                <option value="Good">Good</option>
+                <option value="Satisfactory">Satisfactory</option>
+                <option value="Needs Improvement">Needs Improvement</option>
+            </select>
+        </div>
+        
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+            <select id="dateFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">All Time</option>
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="mt-4 flex justify-between items-center">
+        <div class="text-sm text-gray-500">
+            Showing <span id="sessionCount">{{ sessions|length }}</span> sessions
+        </div>
+        <button onclick="clearFilters()" class="text-blue-600 hover:text-blue-700 text-sm">
+            Clear all filters
+        </button>
+    </div>
+</div>
+
+<!-- Sessions Table -->
+<div class="card">
+    <div class="table-responsive">
+        <table class="table" id="sessionsTable">
+            <thead>
+                <tr>
+                    <th class="cursor-pointer" onclick="sortTable('session_id')">
+                        Session ID
+                        <i data-lucide="chevron-up-down" class="w-3 h-3 inline ml-1 text-gray-400"></i>
+                    </th>
+                    <th class="cursor-pointer" onclick="sortTable('created_at')">
+                        Start Time
+                        <i data-lucide="chevron-up-down" class="w-3 h-3 inline ml-1 text-gray-400"></i>
+                    </th>
+                    <th class="cursor-pointer" onclick="sortTable('duration_minutes')">
+                        Duration
+                        <i data-lucide="chevron-up-down" class="w-3 h-3 inline ml-1 text-gray-400"></i>
+                    </th>
+                    <th>Progress</th>
+                    <th class="cursor-pointer" onclick="sortTable('performance')">
+                        Performance
+                        <i data-lucide="chevron-up-down" class="w-3 h-3 inline ml-1 text-gray-400"></i>
+                    </th>
+                    <th class="cursor-pointer" onclick="sortTable('average_score')">
+                        Score
+                        <i data-lucide="chevron-up-down" class="w-3 h-3 inline ml-1 text-gray-400"></i>
+                    </th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="sessionsTableBody">
+                {% for session in sessions %}
+                <tr class="session-row hover:bg-gray-50" 
+                    data-session-id="{{ session.session_id }}"
+                    data-status="{{ 'completed' if session.is_complete else 'in-progress' }}"
+                    data-performance="{{ session.final_evaluation.overall_performance if session.final_evaluation else '' }}"
+                    data-created="{{ session.created_at }}"
+                    data-duration="{{ session.duration_minutes }}"
+                    data-score="{{ session.final_evaluation.average_score if session.final_evaluation else 0 }}">
+                    
+                    <td>
+                        <div class="font-medium text-gray-900">
+                            {{ session.session_id[:8] }}...
+                        </div>
+                        <div class="text-sm text-gray-500">
+                            {{ session.session_id[-8:] }}
+                        </div>
+                    </td>
+                    
+                    <td>
+                        <div class="text-gray-900">
+                            {{ session.created_at[:10] }}
+                        </div>
+                        <div class="text-sm text-gray-500">
+                            {{ session.created_at[11:16] }}
+                        </div>
+                    </td>
+                    
+                    <td>
+                        <span class="text-gray-900">{{ session.duration_minutes }} min</span>
+                    </td>
+                    
+                    <td>
+                        <div class="flex items-center">
+                            {% if session.is_complete %}
+                                <div class="w-4 h-4 bg-green-500 rounded-full mr-2"></div>
+                                <span class="badge badge-success">Completed</span>
+                            {% else %}
+                                <div class="w-4 h-4 bg-yellow-500 rounded-full mr-2"></div>
+                                <span class="badge badge-warning">{{ session.completed_parts_count }}/5 Parts</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    
+                    <td>
+                        {% if session.final_evaluation %}
+                            {% set performance = session.final_evaluation.overall_performance %}
+                            {% if performance == 'Excellent' %}
+                                <span class="badge badge-success">{{ performance }}</span>
+                            {% elif performance == 'Good' %}
+                                <span class="badge badge-info">{{ performance }}</span>
+                            {% elif performance == 'Satisfactory' %}
+                                <span class="badge badge-warning">{{ performance }}</span>
+                            {% else %}
+                                <span class="badge badge-danger">{{ performance }}</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-gray-400">Pending</span>
+                        {% endif %}
+                    </td>
+                    
+                    <td>
+                        {% if session.final_evaluation %}
+                            <div class="flex items-center">
+                                <span class="font-medium text-gray-900">{{ session.final_evaluation.average_score }}/10</span>
+                                <div class="ml-2 w-16 bg-gray-200 rounded-full h-2">
+                                    <div class="bg-blue-600 h-2 rounded-full" style="width: {{ (session.final_evaluation.average_score / 10) * 100 }}%"></div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <span class="text-gray-400">-</span>
+                        {% endif %}
+                    </td>
+                    
+                    <td>
+                        <div class="flex space-x-2">
+                            <a href="/dashboard/session/{{ session.session_id }}" 
+                               class="text-blue-600 hover:text-blue-700" title="View Details">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
+                            </a>
+                            {% if session.final_evaluation %}
+                            <button onclick="downloadReport('{{ session.session_id }}')" 
+                                    class="text-green-600 hover:text-green-700" title="Download Report">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Empty State -->
+    <div id="emptyState" class="hidden text-center py-12">
+        <i data-lucide="inbox" class="w-16 h-16 text-gray-300 mx-auto mb-4"></i>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No sessions found</h3>
+        <p class="text-gray-500">No evaluation sessions match your current filters.</p>
+    </div>
+</div>
+
+<!-- Pagination -->
+<div class="mt-6 flex justify-between items-center">
+    <div class="text-sm text-gray-500">
+        Showing <span id="showingCount">{{ sessions|length }}</span> of <span id="totalCount">{{ sessions|length }}</span> sessions
+    </div>
+    <div id="pagination" class="flex space-x-2">
+        <!-- Pagination will be added here if needed -->
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let allSessions = {{ sessions | tojson }};
+let filteredSessions = [...allSessions];
+let currentSort = { field: 'created_at', direction: 'desc' };
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize filters
+    setupFilters();
+    
+    // Initial render
+    renderSessions();
+});
+
+function setupFilters() {
+    // Search input
+    document.getElementById('searchInput').addEventListener('input', applyFilters);
+    
+    // Filter dropdowns
+    document.getElementById('statusFilter').addEventListener('change', applyFilters);
+    document.getElementById('performanceFilter').addEventListener('change', applyFilters);
+    document.getElementById('dateFilter').addEventListener('change', applyFilters);
+}
+
+function applyFilters() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const statusFilter = document.getElementById('statusFilter').value;
+    const performanceFilter = document.getElementById('performanceFilter').value;
+    const dateFilter = document.getElementById('dateFilter').value;
+    
+    filteredSessions = allSessions.filter(session => {
+        // Search filter
+        if (searchTerm && !session.session_id.toLowerCase().includes(searchTerm)) {
+            return false;
+        }
+        
+        // Status filter
+        if (statusFilter) {
+            const sessionStatus = session.is_complete ? 'completed' : 'in-progress';
+            if (sessionStatus !== statusFilter) return false;
+        }
+        
+        // Performance filter
+        if (performanceFilter && session.final_evaluation) {
+            if (session.final_evaluation.overall_performance !== performanceFilter) return false;
+        }
+        
+        // Date filter
+        if (dateFilter) {
+            const sessionDate = new Date(session.created_at);
+            const now = new Date();
+            
+            switch(dateFilter) {
+                case 'today':
+                    if (sessionDate.toDateString() !== now.toDateString()) return false;
+                    break;
+                case 'week':
+                    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    if (sessionDate < weekAgo) return false;
+                    break;
+                case 'month':
+                    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    if (sessionDate < monthAgo) return false;
+                    break;
+            }
+        }
+        
+        return true;
+    });
+    
+    renderSessions();
+}
+
+function renderSessions() {
+    const tbody = document.getElementById('sessionsTableBody');
+    const emptyState = document.getElementById('emptyState');
+    const sessionCount = document.getElementById('sessionCount');
+    
+    if (filteredSessions.length === 0) {
+        tbody.innerHTML = '';
+        emptyState.classList.remove('hidden');
+    } else {
+        emptyState.classList.add('hidden');
+        
+        const html = filteredSessions.map(session => `
+            <tr class="session-row hover:bg-gray-50">
+                <td>
+                    <div class="font-medium text-gray-900">${session.session_id.substring(0, 8)}...</div>
+                    <div class="text-sm text-gray-500">${session.session_id.substring(session.session_id.length - 8)}</div>
+                </td>
+                <td>
+                    <div class="text-gray-900">${session.created_at.substring(0, 10)}</div>
+                    <div class="text-sm text-gray-500">${session.created_at.substring(11, 16)}</div>
+                </td>
+                <td>
+                    <span class="text-gray-900">${session.duration_minutes} min</span>
+                </td>
+                <td>
+                    <div class="flex items-center">
+                        ${session.is_complete 
+                            ? '<div class="w-4 h-4 bg-green-500 rounded-full mr-2"></div><span class="badge badge-success">Completed</span>'
+                            : `<div class="w-4 h-4 bg-yellow-500 rounded-full mr-2"></div><span class="badge badge-warning">${session.completed_parts_count}/5 Parts</span>`
+                        }
+                    </div>
+                </td>
+                <td>
+                    ${session.final_evaluation 
+                        ? `<span class="badge badge-${getPerformanceBadgeClass(session.final_evaluation.overall_performance)}">${session.final_evaluation.overall_performance}</span>`
+                        : '<span class="text-gray-400">Pending</span>'
+                    }
+                </td>
+                <td>
+                    ${session.final_evaluation 
+                        ? `<div class="flex items-center">
+                             <span class="font-medium text-gray-900">${session.final_evaluation.average_score}/10</span>
+                             <div class="ml-2 w-16 bg-gray-200 rounded-full h-2">
+                                 <div class="bg-blue-600 h-2 rounded-full" style="width: ${(session.final_evaluation.average_score / 10) * 100}%"></div>
+                             </div>
+                           </div>`
+                        : '<span class="text-gray-400">-</span>'
+                    }
+                </td>
+                <td>
+                    <div class="flex space-x-2">
+                        <a href="/dashboard/session/${session.session_id}" class="text-blue-600 hover:text-blue-700" title="View Details">
+                            <i data-lucide="eye" class="w-4 h-4"></i>
+                        </a>
+                        ${session.final_evaluation 
+                            ? `<button onclick="downloadReport('${session.session_id}')" class="text-green-600 hover:text-green-700" title="Download Report">
+                                 <i data-lucide="download" class="w-4 h-4"></i>
+                               </button>`
+                            : ''
+                        }
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+        
+        tbody.innerHTML = html;
+    }
+    
+    sessionCount.textContent = filteredSessions.length;
+    
+    // Re-initialize icons
+    lucide.createIcons();
+}
+
+function getPerformanceBadgeClass(performance) {
+    switch(performance) {
+        case 'Excellent': return 'success';
+        case 'Good': return 'info';
+        case 'Satisfactory': return 'warning';
+        default: return 'danger';
+    }
+}
+
+function sortTable(field) {
+    if (currentSort.field === field) {
+        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+        currentSort.field = field;
+        currentSort.direction = 'asc';
+    }
+    
+    filteredSessions.sort((a, b) => {
+        let aVal, bVal;
+        
+        switch(field) {
+            case 'session_id':
+                aVal = a.session_id;
+                bVal = b.session_id;
+                break;
+            case 'created_at':
+                aVal = new Date(a.created_at);
+                bVal = new Date(b.created_at);
+                break;
+            case 'duration_minutes':
+                aVal = a.duration_minutes;
+                bVal = b.duration_minutes;
+                break;
+            case 'performance':
+                aVal = a.final_evaluation ? a.final_evaluation.overall_performance : '';
+                bVal = b.final_evaluation ? b.final_evaluation.overall_performance : '';
+                break;
+            case 'average_score':
+                aVal = a.final_evaluation ? a.final_evaluation.average_score : 0;
+                bVal = b.final_evaluation ? b.final_evaluation.average_score : 0;
+                break;
+            default:
+                return 0;
+        }
+        
+        if (aVal < bVal) return currentSort.direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return currentSort.direction === 'asc' ? 1 : -1;
+        return 0;
+    });
+    
+    renderSessions();
+}
+
+function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('performanceFilter').value = '';
+    document.getElementById('dateFilter').value = '';
+    
+    filteredSessions = [...allSessions];
+    renderSessions();
+}
+
+function refreshSessions() {
+    window.location.reload();
+}
+
+function exportSessions() {
+    // Create CSV content
+    const headers = ['Session ID', 'Created At', 'Duration (min)', 'Status', 'Performance', 'Score'];
+    const csvContent = [
+        headers.join(','),
+        ...filteredSessions.map(session => [
+            session.session_id,
+            session.created_at,
+            session.duration_minutes,
+            session.is_complete ? 'Completed' : 'In Progress',
+            session.final_evaluation ? session.final_evaluation.overall_performance : 'Pending',
+            session.final_evaluation ? session.final_evaluation.average_score : 'N/A'
+        ].join(','))
+    ].join('\n');
+    
+    // Download CSV
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `evaluation_sessions_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+function downloadReport(sessionId) {
+    // This would integrate with a report generation endpoint
+    alert(`Downloading report for session: ${sessionId}`);
+}
+</script>
+{% endblock %} 

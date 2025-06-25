@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import google.genai as genai
 import os
@@ -9,6 +10,8 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import logging
 from typing import List, Dict, Optional
+from supabase import create_client, Client
+from dashboard import dashboard_router
 
 # Load environment variables
 load_dotenv()
@@ -16,6 +19,18 @@ load_dotenv()
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Initialize Supabase client
+try:
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_ANON_KEY")
+    if not supabase_url or not supabase_key:
+        raise ValueError("SUPABASE_URL and SUPABASE_ANON_KEY must be set in environment variables")
+    supabase: Client = create_client(supabase_url, supabase_key)
+    logger.info("Supabase client configured successfully")
+except Exception as e:
+    logger.error(f"Failed to configure Supabase: {e}")
+    supabase = None
 
 # Initialize FastAPI app
 app = FastAPI(title="Catalyst Backend API", version="2.0.0")
@@ -28,6 +43,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount static files for dashboard
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Include dashboard router
+app.include_router(dashboard_router)
 
 # Configure Google AI
 try:
@@ -95,27 +116,41 @@ class HealthResponse(BaseModel):
     activeSessionsCount: int
     version: str
 
-# Enhanced session management with timestamps and cleanup
-sessions_data = {}
-
+# Database helper functions
 def cleanup_old_sessions():
     """Remove sessions older than 24 hours"""
-    cutoff_time = datetime.now() - timedelta(hours=24)
-    expired_sessions = [
-        session_id for session_id, data in sessions_data.items()
-        if datetime.fromisoformat(data.get("created_at", "1970-01-01T00:00:00")) < cutoff_time
-    ]
-    for session_id in expired_sessions:
-        del sessions_data[session_id]
-        logger.info(f"Cleaned up expired session: {session_id}")
+    if not supabase:
+        return
+    
+    try:
+        from datetime import timezone
+        cutoff_time = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+        result = supabase.table("sessions").delete().lt("created_at", cutoff_time).execute()
+        if result.data:
+            logger.info(f"Cleaned up {len(result.data)} expired sessions")
+    except Exception as e:
+        logger.error(f"Error cleaning up old sessions: {e}")
 
-def get_current_part(session_data):
+def get_current_part(completed_parts):
     """Determine the current part based on completed parts"""
-    completed = session_data.get("completed_parts", [])
     for part_id in range(1, 5):
-        if part_id not in completed:
+        if part_id not in completed_parts:
             return part_id
     return 5  # All parts completed
+
+def get_session_from_db(session_id: str):
+    """Get session data from database"""
+    if not supabase:
+        raise HTTPException(status_code=500, detail="Database not configured")
+    
+    try:
+        result = supabase.table("sessions").select("*").eq("session_id", session_id).execute()
+        if not result.data:
+            return None
+        return result.data[0]
+    except Exception as e:
+        logger.error(f"Error fetching session {session_id}: {e}")
+        return None
 
 def calculate_average_score(scores):
     """Calculate average score from a scores dictionary"""
@@ -285,9 +320,19 @@ EVALUATION_PARTS = [
 async def health_check():
     """Enhanced health check endpoint with system status"""
     cleanup_old_sessions()  # Clean up old sessions on health check
+    
+    # Get active sessions count from database
+    active_sessions_count = 0
+    if supabase:
+        try:
+            result = supabase.table("sessions").select("id").execute()
+            active_sessions_count = len(result.data) if result.data else 0
+        except Exception as e:
+            logger.error(f"Error counting active sessions: {e}")
+    
     return HealthResponse(
         message="Catalyst Backend API is running!",
-        activeSessionsCount=len(sessions_data),
+        activeSessionsCount=active_sessions_count,
         version="2.0.0"
     )
 
@@ -301,12 +346,16 @@ async def generate_multipart_case():
         if not model_name:
             raise HTTPException(status_code=500, detail="AI model not configured")
         
+        if not supabase:
+            raise HTTPException(status_code=500, detail="Database not configured")
+        
         # Enhanced case study generation prompt
         with open('promptforcasestudy.md', 'r') as file:
             prompt = file.read()
         
         # Generate response with retry logic
         max_retries = 3
+        case_study = None
         for attempt in range(max_retries):
             try:
                 response = client.models.generate_content(
@@ -331,21 +380,46 @@ async def generate_multipart_case():
                     logger.warning(f"Attempt {attempt + 1} failed: {e}")
                     continue
                 else:
-                    raise e
+                    logger.error(f"All case study generation attempts failed: {e}")
+                    case_study = None
 
-        # Generate session ID and initialize session
+        # Use fallback if generation failed
+        if not case_study:
+            case_study = (
+                "Case Study: Critical Quality Crisis at Advanced Electronics Manufacturing. "
+                "TechFlow Industries, a 500-employee electronics manufacturer, is experiencing a severe quality crisis "
+                "affecting their primary product line. Over the past 6 weeks, customer returns have increased by 35%, "
+                "with defects ranging from intermittent connection failures (40% of returns) to complete component "
+                "malfunctions (25% of returns). The defects are discovered at various stages: 30% during final testing, "
+                "45% during customer burn-in testing, and 25% in field use within 30 days. This has resulted in "
+                "$2.3M in warranty costs, 15% reduction in production throughput due to increased rework, and "
+                "two major customers threatening to switch suppliers. The manufacturing process involves 12 automated "
+                "assembly stations, 3 manual inspection points, and employs 85 production workers across 3 shifts. "
+                "Recent changes include a new supplier for critical components (implemented 8 weeks ago) and "
+                "upgraded software on 4 assembly machines (implemented 10 weeks ago). Your task is to analyze "
+                "this problem systematically through a structured approach."
+            )
+
+        # Generate session ID and store in database
         session_id = str(uuid.uuid4())
+        total_questions = sum(len(part["questions"]) for part in EVALUATION_PARTS)
         
-        # Initialize enhanced session data
-        sessions_data[session_id] = {
+        # Store session in database
+        from datetime import timezone
+        current_time = datetime.now(timezone.utc).isoformat()
+        session_data = {
+            "session_id": session_id,
             "case_study": case_study,
             "completed_parts": [],
-            "responses": {},
-            "part_evaluations": {},
-            "created_at": datetime.now().isoformat(),
-            "last_activity": datetime.now().isoformat(),
-            "total_questions": sum(len(part["questions"]) for part in EVALUATION_PARTS)
+            "total_questions": total_questions,
+            "created_at": current_time,
+            "last_activity": current_time,
+            "is_complete": False
         }
+        
+        result = supabase.table("sessions").insert(session_data).execute()
+        if not result.data:
+            raise HTTPException(status_code=500, detail="Failed to create session")
 
         return MultiPartCaseStudyResponse(
             caseStudy=case_study,
@@ -355,65 +429,35 @@ async def generate_multipart_case():
             estimatedTime="30-45 minutes"
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error in generate_multipart_case: {e}")
-        
-        # Enhanced fallback case study
-        fallback_case_study = (
-            "Case Study: Critical Quality Crisis at Advanced Electronics Manufacturing. "
-            "TechFlow Industries, a 500-employee electronics manufacturer, is experiencing a severe quality crisis "
-            "affecting their primary product line. Over the past 6 weeks, customer returns have increased by 35%, "
-            "with defects ranging from intermittent connection failures (40% of returns) to complete component "
-            "malfunctions (25% of returns). The defects are discovered at various stages: 30% during final testing, "
-            "45% during customer burn-in testing, and 25% in field use within 30 days. This has resulted in "
-            "$2.3M in warranty costs, 15% reduction in production throughput due to increased rework, and "
-            "two major customers threatening to switch suppliers. The manufacturing process involves 12 automated "
-            "assembly stations, 3 manual inspection points, and employs 85 production workers across 3 shifts. "
-            "Recent changes include a new supplier for critical components (implemented 8 weeks ago) and "
-            "upgraded software on 4 assembly machines (implemented 10 weeks ago). Your task is to analyze "
-            "this problem systematically through a structured approach."
-        )
-        
-        # Generate session ID for fallback
-        session_id = str(uuid.uuid4())
-        sessions_data[session_id] = {
-            "case_study": fallback_case_study,
-            "completed_parts": [],
-            "responses": {},
-            "part_evaluations": {},
-            "created_at": datetime.now().isoformat(),
-            "last_activity": datetime.now().isoformat(),
-            "total_questions": sum(len(part["questions"]) for part in EVALUATION_PARTS)
-        }
-        
-        return MultiPartCaseStudyResponse(
-            caseStudy=fallback_case_study,
-            sessionId=session_id,
-            parts=EVALUATION_PARTS,
-            totalParts=len(EVALUATION_PARTS),
-            estimatedTime="30-45 minutes"
-        )
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 # Enhanced part submission with improved validation and AI evaluation
 @app.post("/api/submit-part", response_model=PartEvaluationResponse)
 async def submit_part(request: PartSubmissionRequest):
     """Submit responses for a specific part with enhanced validation and evaluation"""
     try:
-        # Validate session exists
-        if request.sessionId not in sessions_data:
-            raise HTTPException(status_code=404, detail="Session not found or expired")
-        
         if not model_name:
             raise HTTPException(status_code=500, detail="AI model not configured")
-
-        session = sessions_data[request.sessionId]
-        part = next((p for p in EVALUATION_PARTS if p["id"] == request.partId), None)
         
+        if not supabase:
+            raise HTTPException(status_code=500, detail="Database not configured")
+
+        # Validate session exists
+        session = get_session_from_db(request.sessionId)
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found or expired")
+        
+        part = next((p for p in EVALUATION_PARTS if p["id"] == request.partId), None)
         if not part:
             raise HTTPException(status_code=400, detail="Invalid part ID")
 
         # Check if part already completed
-        if request.partId in session["completed_parts"]:
+        existing_evaluation = supabase.table("part_evaluations").select("*").eq("session_id", request.sessionId).eq("part_id", request.partId).execute()
+        if existing_evaluation.data:
             raise HTTPException(status_code=400, detail="Part already completed")
 
         # Special handling for Part 5 (audio recording)
@@ -421,18 +465,36 @@ async def submit_part(request: PartSubmissionRequest):
             if not request.audioData:
                 raise HTTPException(status_code=400, detail="Audio recording is required for Part 5")
             
-            # Store audio data
-            session["responses"][str(request.partId)] = {
-                "q5_verbal": "Audio recording submitted"
+            # Store audio response in database
+            response_data = {
+                "session_id": request.sessionId,
+                "part_id": request.partId,
+                "question_id": "q5_verbal",
+                "response_text": "Audio recording submitted",
+                "audio_data": request.audioData
             }
-            session["audio_data"] = request.audioData
+            supabase.table("responses").insert(response_data).execute()
             
             # Evaluate audio recording
             evaluation_data = await evaluate_audio_response(request.audioData, session["case_study"])
             
         else:
             # Regular text-based part validation and processing
-            # Add placeholder texts for empty responses
+            # Store responses in database
+            for question in part["questions"]:
+                response_text = request.responses.get(question["id"], "").strip()
+                if not response_text:
+                    response_text = f"[No response provided for: {question['question'][:100]}...]"
+                
+                response_data = {
+                    "session_id": request.sessionId,
+                    "part_id": request.partId,
+                    "question_id": question["id"],
+                    "response_text": response_text
+                }
+                supabase.table("responses").insert(response_data).execute()
+            
+            # Get processed responses for evaluation
             processed_responses = {}
             for question in part["questions"]:
                 response_text = request.responses.get(question["id"], "").strip()
@@ -440,9 +502,6 @@ async def submit_part(request: PartSubmissionRequest):
                     processed_responses[question["id"]] = f"[No response provided for: {question['question'][:100]}...]"
                 else:
                     processed_responses[question["id"]] = response_text
-
-            # Update session activity
-            session["responses"][str(request.partId)] = processed_responses
             
             # Create enhanced evaluation prompt for text responses
             case_study = session["case_study"]
@@ -549,31 +608,40 @@ Respond only with valid JSON.
                     "canProceed": True
                 }
 
-        # Update session activity
-        session["last_activity"] = datetime.now().isoformat()
-        
         # Calculate average score
         average_score = calculate_average_score(evaluation_data["scores"])
         
         # Determine if student can proceed
-        can_proceed = True#average_score >= part["passingScore"]
+        can_proceed = True  # average_score >= part["passingScore"]
         evaluation_data["canProceed"] = can_proceed
 
-        # Store evaluation
-        session["part_evaluations"][str(request.partId)] = evaluation_data
+        # Store evaluation in database
+        evaluation_record = {
+            "session_id": request.sessionId,
+            "part_id": request.partId,
+            "scores": evaluation_data["scores"],
+            "feedback": evaluation_data["feedback"],
+            "can_proceed": can_proceed,
+            "average_score": average_score,
+            "transcription": evaluation_data.get("transcription", None)
+        }
+        supabase.table("part_evaluations").insert(evaluation_record).execute()
         
-        # Store transcription separately for audio parts
-        if request.partId == 5 and "transcription" in evaluation_data:
-            session["transcription"] = evaluation_data["transcription"]
+        # Update session completed_parts and last_activity
+        completed_parts = session.get("completed_parts", [])
+        if request.partId not in completed_parts:
+            completed_parts.append(request.partId)
         
-        # Update completed parts if student can proceed
+        from datetime import timezone
+        supabase.table("sessions").update({
+            "completed_parts": completed_parts,
+            "last_activity": datetime.now(timezone.utc).isoformat()
+        }).eq("session_id", request.sessionId).execute()
+        
+        # Determine next part
         next_part_id = None
-        if can_proceed:
-            # Avoid duplicates in completed_parts
-            if request.partId not in session["completed_parts"]:
-                session["completed_parts"].append(request.partId)
-            if request.partId < len(EVALUATION_PARTS):
-                next_part_id = request.partId + 1
+        if can_proceed and request.partId < len(EVALUATION_PARTS):
+            next_part_id = request.partId + 1
 
         try:
             return PartEvaluationResponse(
@@ -591,9 +659,33 @@ Respond only with valid JSON.
             fallback_scores = {key: float(5.0) for key in part["rubrics"].keys()}
             fallback_average = 5.0
             
-            # Ensure part is marked as completed even in fallback case
-            if request.partId not in session["completed_parts"]:
-                session["completed_parts"].append(request.partId)
+            # Store fallback evaluation in database
+            try:
+                fallback_evaluation = {
+                    "session_id": request.sessionId,
+                    "part_id": request.partId,
+                    "scores": fallback_scores,
+                    "feedback": "Your submission has been received and evaluated. Some technical issues occurred during detailed analysis, but your responses show engagement with the problem-solving process. You may continue to the next part.",
+                    "can_proceed": True,
+                    "average_score": fallback_average,
+                    "transcription": evaluation_data.get("transcription", None) if 'evaluation_data' in locals() else None
+                }
+                supabase.table("part_evaluations").insert(fallback_evaluation).execute()
+                
+                # Update session completed_parts
+                session = get_session_from_db(request.sessionId)
+                completed_parts = session.get("completed_parts", [])
+                if request.partId not in completed_parts:
+                    completed_parts.append(request.partId)
+                
+                from datetime import timezone
+                supabase.table("sessions").update({
+                    "completed_parts": completed_parts,
+                    "last_activity": datetime.now(timezone.utc).isoformat()
+                }).eq("session_id", request.sessionId).execute()
+                
+            except Exception as db_error:
+                logger.error(f"Database fallback error: {db_error}")
             
             fallback_next_part_id = request.partId + 1 if request.partId < len(EVALUATION_PARTS) else None
             
@@ -604,7 +696,7 @@ Respond only with valid JSON.
                 canProceed=True,
                 averageScore=fallback_average,
                 nextPartId=fallback_next_part_id,
-                transcription=evaluation_data.get("transcription", None)
+                transcription=evaluation_data.get("transcription", None) if 'evaluation_data' in locals() else None
             )
 
     except HTTPException:
@@ -614,9 +706,20 @@ Respond only with valid JSON.
         
         # Emergency fallback: ensure part is marked as completed even in error scenarios
         # This prevents the final evaluation from failing due to missing parts
-        if request.partId not in sessions_data[request.sessionId]["completed_parts"]:
-            sessions_data[request.sessionId]["completed_parts"].append(request.partId)
-            logger.warning(f"Emergency completion marking for part {request.partId} due to error: {e}")
+        try:
+            session = get_session_from_db(request.sessionId)
+            if session:
+                completed_parts = session.get("completed_parts", [])
+                if request.partId not in completed_parts:
+                    completed_parts.append(request.partId)
+                    from datetime import timezone
+                    supabase.table("sessions").update({
+                        "completed_parts": completed_parts,
+                        "last_activity": datetime.now(timezone.utc).isoformat()
+                    }).eq("session_id", request.sessionId).execute()
+                    logger.warning(f"Emergency completion marking for part {request.partId} due to error: {e}")
+        except Exception as emergency_error:
+            logger.error(f"Emergency fallback failed: {emergency_error}")
         
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
@@ -637,13 +740,6 @@ async def evaluate_audio_response(audio_data: str, case_study: str):
             temp_audio_path = temp_audio.name
         
         try:
-            # Upload audio file to Gemini
-            uploaded_file = client.files.upload(
-                file=temp_audio_path,
-                mime_type="audio/webm"
-            )
-            
-            
             # Create comprehensive audio evaluation prompt
             audio_prompt = f"""
 You are evaluating a 2-minute verbal explanation from a candidate solving a manufacturing problem.
@@ -682,18 +778,19 @@ Provide your evaluation in this exact JSON format:
 
 Respond only with valid JSON.
             """
-            
+            audio_part = genai.types.Part.from_bytes(
+                data=audio_bytes,
+                mime_type='audio/mp3',
+            )
             # Generate content with audio
             response = client.models.generate_content(
                 model=model_name,
-                contents=[uploaded_file, audio_prompt],
+                contents=[audio_prompt, audio_part],
                 config = genai.types.GenerateContentConfig(
                     thinking_config=genai.types.ThinkingConfig(thinking_budget=0)
                 )
             )
             
-            # Clean up uploaded file
-            client.files.delete(uploaded_file.name)
             
             # Parse response
             text = response.text
@@ -920,17 +1017,21 @@ def map_weaknesses_to_tools(overall_scores, part_evaluations):
 @app.get("/api/session-status/{session_id}", response_model=SessionStatusResponse)
 async def get_session_status(session_id: str):
     """Get current status of an evaluation session"""
-    if session_id not in sessions_data:
+    if not supabase:
+        raise HTTPException(status_code=500, detail="Database not configured")
+    
+    session = get_session_from_db(session_id)
+    if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     
-    session = sessions_data[session_id]
-    current_part = get_current_part(session)
+    completed_parts = session.get("completed_parts", [])
+    current_part = get_current_part(completed_parts)
     
     return SessionStatusResponse(
         sessionId=session_id,
-        completedParts=session["completed_parts"],
+        completedParts=completed_parts,
         currentPart=current_part,
-        isComplete=len(session["completed_parts"]) >= len(EVALUATION_PARTS),
+        isComplete=len(completed_parts) >= len(EVALUATION_PARTS),
         createdAt=session["created_at"]
     )
 
@@ -938,23 +1039,33 @@ async def get_session_status(session_id: str):
 @app.get("/api/debug/session/{session_id}")
 async def debug_session_status(session_id: str):
     """Debug endpoint to get detailed session information"""
-    if session_id not in sessions_data:
+    if not supabase:
+        raise HTTPException(status_code=500, detail="Database not configured")
+    
+    session = get_session_from_db(session_id)
+    if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     
-    session = sessions_data[session_id]
+    # Get responses and evaluations from database
+    responses = supabase.table("responses").select("part_id, question_id").eq("session_id", session_id).execute()
+    evaluations = supabase.table("part_evaluations").select("part_id").eq("session_id", session_id).execute()
+    
+    completed_parts = session.get("completed_parts", [])
     
     return {
         "sessionId": session_id,
-        "completedParts": session.get("completed_parts", []),
+        "completedParts": completed_parts,
         "totalParts": len(EVALUATION_PARTS),
-        "currentPart": get_current_part(session),
-        "isComplete": len(session.get("completed_parts", [])) >= len(EVALUATION_PARTS),
+        "currentPart": get_current_part(completed_parts),
+        "isComplete": len(completed_parts) >= len(EVALUATION_PARTS),
         "createdAt": session.get("created_at"),
         "lastActivity": session.get("last_activity"),
-        "hasResponses": bool(session.get("responses", {})),
-        "hasEvaluations": bool(session.get("part_evaluations", {})),
-        "responseKeys": list(session.get("responses", {}).keys()),
-        "evaluationKeys": list(session.get("part_evaluations", {}).keys()),
+        "hasResponses": bool(responses.data),
+        "hasEvaluations": bool(evaluations.data),
+        "responseCount": len(responses.data) if responses.data else 0,
+        "evaluationCount": len(evaluations.data) if evaluations.data else 0,
+        "responseParts": list(set([r["part_id"] for r in responses.data])) if responses.data else [],
+        "evaluationParts": [e["part_id"] for e in evaluations.data] if evaluations.data else [],
         "sessionKeys": list(session.keys())
     }
 
@@ -963,65 +1074,77 @@ async def debug_session_status(session_id: str):
 async def get_final_evaluation(session_id: str):
     """Get comprehensive evaluation across all completed parts"""
     try:
-        if session_id not in sessions_data:
-            raise HTTPException(status_code=404, detail="Session not found or expired")
-        
         if not model_name:
             raise HTTPException(status_code=500, detail="AI model not configured")
-
-        session = sessions_data[session_id]
         
-        if len(session["completed_parts"]) < len(EVALUATION_PARTS):
-            completed_parts = session["completed_parts"]
-            total_parts = len(EVALUATION_PARTS)
-            missing_parts = [i for i in range(1, total_parts + 1) if i not in completed_parts]
+        if not supabase:
+            raise HTTPException(status_code=500, detail="Database not configured")
+
+        session = get_session_from_db(session_id)
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found or expired")
+        
+        # Get all responses and evaluations from database
+        responses_result = supabase.table("responses").select("*").eq("session_id", session_id).execute()
+        evaluations_result = supabase.table("part_evaluations").select("*").eq("session_id", session_id).execute()
+        
+        responses_data = responses_result.data if responses_result.data else []
+        evaluations_data = evaluations_result.data if evaluations_result.data else []
+        
+        # Check completeness and create placeholder data if needed
+        completed_parts = session.get("completed_parts", [])
+        total_parts = len(EVALUATION_PARTS)
+        
+        if len(completed_parts) < total_parts or len(evaluations_data) < total_parts:
+            missing_parts = [i for i in range(1, total_parts + 1) if i not in [e["part_id"] for e in evaluations_data]]
             
-            # Check if we have responses and evaluations for all parts (data exists but tracking is off)
-            has_all_responses = all(str(i) in session.get("responses", {}) for i in range(1, total_parts + 1))
-            has_all_evaluations = all(str(i) in session.get("part_evaluations", {}) for i in range(1, total_parts + 1))
-            
-            if has_all_responses and has_all_evaluations:
-                # Data exists for all parts, fix the completion tracking
-                logger.warning(f"Fixing completion tracking for session {session_id} - all data exists but completion tracking was incomplete")
-                session["completed_parts"] = list(range(1, total_parts + 1))
-            else:
-                # Enhanced recovery: Create placeholder data for missing parts to allow final evaluation
+            if missing_parts:
                 logger.warning(f"Creating placeholder data for missing parts: {missing_parts} in session {session_id}")
                 
                 for missing_part_id in missing_parts:
                     part = EVALUATION_PARTS[missing_part_id - 1]
                     
-                    # Create placeholder responses if missing
-                    if str(missing_part_id) not in session.get("responses", {}):
-                        if "responses" not in session:
-                            session["responses"] = {}
-                        
-                        if missing_part_id == 5:  # Audio part
-                            session["responses"][str(missing_part_id)] = {
-                                "q5_verbal": "Audio recording not submitted - technical issue detected"
-                            }
-                        else:  # Text parts
-                            placeholder_responses = {}
-                            for question in part["questions"]:
-                                placeholder_responses[question["id"]] = "[No response - technical issue during submission]"
-                            session["responses"][str(missing_part_id)] = placeholder_responses
-                    
-                    # Create placeholder evaluation if missing
-                    if str(missing_part_id) not in session.get("part_evaluations", {}):
-                        if "part_evaluations" not in session:
-                            session["part_evaluations"] = {}
-                        
-                        # Create minimal scores for missing evaluation
-                        placeholder_scores = {key:1.0 for key in part["rubrics"].keys()}  # Low but not failing scores
-                        session["part_evaluations"][str(missing_part_id)] = {
-                            "scores": placeholder_scores,
-                            "feedback": f"Part {missing_part_id} evaluation incomplete due to technical issues. Placeholder scores assigned for final evaluation completion.",
-                            "canProceed": True
+                    # Create placeholder responses
+                    if missing_part_id == 5:  # Audio part
+                        placeholder_response = {
+                            "session_id": session_id,
+                            "part_id": missing_part_id,
+                            "question_id": "q5_verbal",
+                            "response_text": "Audio recording not submitted - technical issue detected",
+                            "audio_data": None
                         }
+                        responses_data.append(placeholder_response)
+                    else:  # Text parts
+                        for question in part["questions"]:
+                            placeholder_response = {
+                                "session_id": session_id,
+                                "part_id": missing_part_id,
+                                "question_id": question["id"],
+                                "response_text": "[No response - technical issue during submission]",
+                                "audio_data": None
+                            }
+                            responses_data.append(placeholder_response)
+                    
+                    # Create placeholder evaluation
+                    placeholder_scores = {key: 1.0 for key in part["rubrics"].keys()}
+                    placeholder_evaluation = {
+                        "session_id": session_id,
+                        "part_id": missing_part_id,
+                        "scores": placeholder_scores,
+                        "feedback": f"Part {missing_part_id} evaluation incomplete due to technical issues. Placeholder scores assigned for final evaluation completion.",
+                        "can_proceed": True,
+                        "average_score": 1.0,
+                        "transcription": None
+                    }
+                    evaluations_data.append(placeholder_evaluation)
                 
-                # Mark all parts as completed now that we have placeholder data
-                session["completed_parts"] = list(range(1, total_parts + 1))
-                logger.info(f"Successfully created placeholder data and marked all parts as completed for session {session_id}")
+                # Update completed parts in database
+                supabase.table("sessions").update({
+                    "completed_parts": list(range(1, total_parts + 1)),
+                    "is_complete": True
+                }).eq("session_id", session_id).execute()
+                
+                logger.info(f"Successfully created placeholder data for session {session_id}")
 
         # Compile comprehensive data for final evaluation
         all_responses = ""
@@ -1029,17 +1152,31 @@ async def get_final_evaluation(session_id: str):
         total_score = 0
         total_criteria = 0
         
+        # Organize responses by part and question
+        responses_by_part = {}
+        for response in responses_data:
+            part_id = response["part_id"]
+            if part_id not in responses_by_part:
+                responses_by_part[part_id] = {}
+            responses_by_part[part_id][response["question_id"]] = response["response_text"]
+        
+        # Organize evaluations by part
+        evaluations_by_part = {}
+        for evaluation in evaluations_data:
+            part_id = evaluation["part_id"]
+            evaluations_by_part[part_id] = evaluation
+        
         for part_id in range(1, len(EVALUATION_PARTS) + 1):
             part = EVALUATION_PARTS[part_id - 1]
-            responses = session["responses"].get(str(part_id), {})
-            evaluation = session["part_evaluations"].get(str(part_id), {})
+            responses = responses_by_part.get(part_id, {})
+            evaluation = evaluations_by_part.get(part_id, {})
             
             all_responses += f"\n--- Part {part_id}: {part['title']} ---\n"
             if part_id == 5:
                 # Special handling for audio part
-                transcription = session.get("transcription", "Audio recording submitted")
+                transcription = evaluation.get("transcription", "Audio recording submitted")
                 all_responses += f"Verbal Explanation: 2-minute audio recording submitted\n"
-                if transcription != "Audio recording submitted":
+                if transcription and transcription != "Audio recording submitted":
                     all_responses += f"Transcription: {transcription}\n\n"
                 else:
                     all_responses += "\n"
@@ -1058,7 +1195,7 @@ async def get_final_evaluation(session_id: str):
                 "partId": part_id,
                 "title": part['title'],
                 "scores": part_scores,
-                "averageScore": calculate_average_score(part_scores),
+                "averageScore": evaluation.get("average_score", calculate_average_score(part_scores)),
                 "feedback": evaluation.get("feedback", "")
             })
 
@@ -1178,12 +1315,49 @@ Respond only with valid JSON.
                     }
 
         # Calculate completion time
-        created_at = datetime.fromisoformat(session["created_at"])
-        completion_time = datetime.now() - created_at
-        completion_str = f"{int(completion_time.total_seconds() // 60)} minutes"
+        try:
+            created_at_str = session["created_at"]
+            if isinstance(created_at_str, str):
+                # Handle timezone-aware datetime from database
+                created_at = datetime.fromisoformat(created_at_str.replace('Z', '+00:00'))
+                if created_at.tzinfo is not None:
+                    # If timezone-aware, use timezone-aware now()
+                    from datetime import timezone
+                    completion_time = datetime.now(timezone.utc) - created_at
+                else:
+                    # If timezone-naive, use timezone-naive now()
+                    completion_time = datetime.now() - created_at
+            else:
+                # Fallback if not string
+                completion_time = timedelta(minutes=30)  # Default assumption
+            
+            completion_str = f"{int(completion_time.total_seconds() // 60)} minutes"
+        except Exception as time_error:
+            logger.warning(f"Error calculating completion time: {time_error}")
+            completion_str = "30 minutes"  # Fallback value
 
         # Map weaknesses to tools
         tool_recommendations = map_weaknesses_to_tools(final_data["overallScores"], all_evaluations)
+        
+        # Store final evaluation in database
+        final_evaluation_record = {
+            "session_id": session_id,
+            "overall_scores": final_data["overallScores"],
+            "detailed_feedback": final_data["detailedFeedback"],
+            "overall_performance": final_data["overallPerformance"],
+            "average_score": overall_average,
+            "completion_time": completion_str,
+            "tool_recommendations": tool_recommendations
+        }
+        
+        # Check if final evaluation already exists
+        existing_final = supabase.table("final_evaluations").select("id").eq("session_id", session_id).execute()
+        if existing_final.data:
+            # Update existing record
+            supabase.table("final_evaluations").update(final_evaluation_record).eq("session_id", session_id).execute()
+        else:
+            # Insert new record
+            supabase.table("final_evaluations").insert(final_evaluation_record).execute()
 
         # Create response with error handling
         try:

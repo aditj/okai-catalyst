@@ -3,7 +3,7 @@ import './FinalResults.css';
 
 // Base URL for backend API
 const API_BASE_URL = 'https://okai-catalyst.onrender.com';
-// const API_BASE_URL = 'http://localhost:4000';
+// const API_BASE_URL = 'http://localhost:5002';
 
 function FinalResults({ sessionId, partEvaluations, onRetry }) {
   const [finalEvaluation, setFinalEvaluation] = useState(null);

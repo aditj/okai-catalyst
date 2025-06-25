@@ -1,10 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './PartComponent.css';
 import AudioRecorder from './AudioRecorder';
 
-function PartComponent({ part, onSubmit, isSubmitting, evaluation }) {
+function PartComponent({ part, onSubmit, isSubmitting, evaluation, demoResponses, onDemoModeChange }) {
   const [responses, setResponses] = useState({});
   const [audioData, setAudioData] = useState(null);
+
+  // Auto-fill responses when demo data is provided
+  useEffect(() => {
+    if (demoResponses) {
+      setResponses(demoResponses);
+      // Reset demo mode after filling
+      if (onDemoModeChange) {
+        setTimeout(() => onDemoModeChange(null), 100);
+      }
+    }
+  }, [demoResponses, onDemoModeChange]);
 
   const handleResponseChange = (questionId, value) => {
     setResponses(prev => ({

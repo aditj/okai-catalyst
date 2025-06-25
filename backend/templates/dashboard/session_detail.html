@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-8">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Session Details</h1>
+            <p class="mt-2 text-gray-600">Session ID: {{ session.session_id }}</p>
+        </div>
+        <a href="/dashboard/sessions" class="btn-secondary">
+            <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>
+            Back to Sessions
+        </a>
+    </div>
+</div>
+
+<!-- Session Overview -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="stat-card">
+        <h4 class="text-sm font-medium text-gray-500">Started</h4>
+        <p class="text-lg font-bold text-gray-900">{{ session.created_at[:10] }}</p>
+    </div>
+    <div class="stat-card">
+        <h4 class="text-sm font-medium text-gray-500">Progress</h4>
+        <p class="text-lg font-bold text-gray-900">{{ session.completed_parts|length }}/5</p>
+    </div>
+    <div class="stat-card">
+        <h4 class="text-sm font-medium text-gray-500">Status</h4>
+        {% if session.is_complete %}
+            <span class="badge badge-success">Completed</span>
+        {% else %}
+            <span class="badge badge-warning">In Progress</span>
+        {% endif %}
+    </div>
+    <div class="stat-card">
+        <h4 class="text-sm font-medium text-gray-500">Final Score</h4>
+        {% if final_evaluation %}
+            <p class="text-lg font-bold text-gray-900">{{ final_evaluation.average_score }}/10</p>
+        {% else %}
+            <p class="text-lg font-bold text-gray-900">Pending</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Case Study -->
+<div class="card mb-6">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4">Case Study</h3>
+    <div class="p-4 bg-gray-50 rounded-lg">
+        <p class="text-gray-700">{{ session.case_study }}</p>
+    </div>
+</div>
+
+<!-- Parts Breakdown -->
+{% for part_id in range(1, 6) %}
+    {% set part_data = parts_data.get(part_id, {}) %}
+    <div class="card mb-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            Part {{ part_id }}: 
+            {% if part_id == 1 %}Problem Identification
+            {% elif part_id == 2 %}Root Cause Analysis
+            {% elif part_id == 3 %}Solution Development
+            {% elif part_id == 4 %}Implementation
+            {% else %}Verbal Explanation
+            {% endif %}
+        </h3>
+        
+        {% if part_data.responses %}
+            <div class="mb-4">
+                <h4 class="font-medium text-gray-700 mb-2">Responses</h4>
+                {% for question_id, response in part_data.responses.items() %}
+                    <div class="p-3 bg-gray-50 rounded mb-2">
+                        {% if part_id == 5 and response.audio_data %}
+                            <p class="text-sm text-gray-600">Audio recording submitted</p>
+                        {% else %}
+                            <p class="text-gray-700">{{ response.response_text }}</p>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        {% if part_data.evaluation %}
+            <div class="border-t pt-4">
+                <h4 class="font-medium text-gray-700 mb-2">Evaluation</h4>
+                <div class="grid grid-cols-2 gap-4 mb-3">
+                    {% for rubric_key, score in part_data.evaluation.scores.items() %}
+                        <div class="text-center">
+                            <p class="text-sm text-gray-600">{{ rubric_key.replace('_', ' ').title() }}</p>
+                            <p class="text-lg font-bold">{{ score }}/10</p>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="p-3 bg-yellow-50 rounded">
+                    <p class="text-yellow-800">{{ part_data.evaluation.feedback }}</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% endfor %}
+
+<!-- Final Evaluation -->
+{% if final_evaluation %}
+<div class="card">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4">Final Evaluation</h3>
+    <div class="grid grid-cols-5 gap-4 mb-4">
+        {% for skill, score in final_evaluation.overall_scores.items() %}
+            <div class="text-center">
+                <p class="text-sm text-gray-600">{{ skill.replace('_', ' ').title() }}</p>
+                <p class="text-xl font-bold">{{ score }}</p>
+            </div>
+        {% endfor %}
+    </div>
+    <div class="p-4 bg-blue-50 rounded">
+        <p class="text-blue-800">{{ final_evaluation.detailed_feedback }}</p>
+    </div>
+</div>
+{% endif %}
+{% endblock %} 

@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="mb-8">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">HR Analytics Dashboard</h1>
+            <p class="mt-2 text-gray-600">Monitor evaluation performance and track training effectiveness</p>
+        </div>
+        <div class="flex space-x-3">
+            <button onclick="refreshData()" class="btn-secondary">
+                <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i>
+                Refresh
+            </button>
+            <a href="/dashboard/analytics" class="btn-primary">
+                <i data-lucide="trending-up" class="w-4 h-4 mr-2"></i>
+                View Analytics
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Key Statistics -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Total Sessions -->
+    <div class="stat-card">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                    <i data-lucide="users" class="w-4 h-4 text-white"></i>
+                </div>
+            </div>
+            <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">Total Sessions</p>
+                <p class="text-2xl font-bold text-gray-900">{{ stats.total_sessions }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Completed Sessions -->
+    <div class="stat-card">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <div class="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                    <i data-lucide="check-circle" class="w-4 h-4 text-white"></i>
+                </div>
+            </div>
+            <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">Completed</p>
+                <p class="text-2xl font-bold text-gray-900">{{ stats.completed_sessions }}</p>
+                <p class="text-xs text-green-600">{{ stats.completion_rate }}% completion rate</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Average Score -->
+    <div class="stat-card">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <div class="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center">
+                    <i data-lucide="star" class="w-4 h-4 text-white"></i>
+                </div>
+            </div>
+            <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">Average Score</p>
+                <p class="text-2xl font-bold text-gray-900">{{ stats.average_score }}/10</p>
+                {% if stats.average_score >= 8 %}
+                    <span class="badge badge-success">Excellent</span>
+                {% elif stats.average_score >= 6.5 %}
+                    <span class="badge badge-info">Good</span>
+                {% elif stats.average_score >= 5 %}
+                    <span class="badge badge-warning">Satisfactory</span>
+                {% else %}
+                    <span class="badge badge-danger">Needs Improvement</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Activity -->
+    <div class="stat-card">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <div class="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+                    <i data-lucide="activity" class="w-4 h-4 text-white"></i>
+                </div>
+            </div>
+            <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">This Week</p>
+                <p class="text-2xl font-bold text-gray-900">{{ stats.recent_sessions }}</p>
+                <p class="text-xs text-gray-500">New evaluations</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <!-- Performance Distribution -->
+    <div class="card">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Performance Distribution</h3>
+            <i data-lucide="pie-chart" class="w-5 h-5 text-gray-400"></i>
+        </div>
+        <div class="chart-container">
+            <canvas id="performanceChart"></canvas>
+        </div>
+    </div>
+    
+    <!-- Quick Insights -->
+    <div class="card">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Quick Insights</h3>
+            <i data-lucide="lightbulb" class="w-5 h-5 text-gray-400"></i>
+        </div>
+        <div class="space-y-4">
+            <div class="p-4 bg-blue-50 rounded-lg">
+                <div class="flex items-start">
+                    <i data-lucide="trend-up" class="w-5 h-5 text-blue-500 mt-0.5 mr-3"></i>
+                    <div>
+                        <h4 class="font-medium text-blue-900">Completion Rate</h4>
+                        <p class="text-sm text-blue-700">{{ stats.completion_rate }}% of started evaluations are completed</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-4 bg-green-50 rounded-lg">
+                <div class="flex items-start">
+                    <i data-lucide="award" class="w-5 h-5 text-green-500 mt-0.5 mr-3"></i>
+                    <div>
+                        <h4 class="font-medium text-green-900">Performance Level</h4>
+                        {% if stats.average_score >= 8 %}
+                            <p class="text-sm text-green-700">Excellent average performance across all evaluations</p>
+                        {% elif stats.average_score >= 6.5 %}
+                            <p class="text-sm text-green-700">Good performance with room for improvement</p>
+                        {% else %}
+                            <p class="text-sm text-green-700">Consider additional training support</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-4 bg-yellow-50 rounded-lg">
+                <div class="flex items-start">
+                    <i data-lucide="clock" class="w-5 h-5 text-yellow-500 mt-0.5 mr-3"></i>
+                    <div>
+                        <h4 class="font-medium text-yellow-900">Weekly Activity</h4>
+                        <p class="text-sm text-yellow-700">{{ stats.recent_sessions }} new evaluations this week</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Sessions Preview -->
+<div class="card">
+    <div class="flex justify-between items-center mb-6">
+        <h3 class="text-lg font-semibold text-gray-900">Recent Evaluation Sessions</h3>
+        <a href="/dashboard/sessions" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+            View all sessions →
+        </a>
+    </div>
+    
+    <div id="recent-sessions-loading" class="text-center py-8">
+        <i data-lucide="loader-2" class="w-6 h-6 text-gray-400 animate-spin mx-auto mb-2"></i>
+        <p class="text-gray-500">Loading recent sessions...</p>
+    </div>
+    
+    <div id="recent-sessions-container" class="hidden">
+        <!-- Sessions will be loaded here via JavaScript -->
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Performance Distribution Chart
+    const performanceData = {{ stats.performance_distribution | tojson }};
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+    
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(performanceData),
+            datasets: [{
+                data: Object.values(performanceData),
+                backgroundColor: [
+                    chartColors.success,
+                    chartColors.info,
+                    chartColors.warning,
+                    chartColors.danger
+                ],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            ...chartDefaults,
+            plugins: {
+                ...chartDefaults.plugins,
+                legend: {
+                    position: 'right'
+                }
+            }
+        }
+    });
+    
+    // Load recent sessions
+    loadRecentSessions();
+});
+
+async function loadRecentSessions() {
+    try {
+        const response = await fetch('/dashboard/api/recent-sessions');
+        const sessions = await response.json();
+        
+        const container = document.getElementById('recent-sessions-container');
+        const loading = document.getElementById('recent-sessions-loading');
+        
+        if (sessions.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <i data-lucide="inbox" class="w-12 h-12 text-gray-300 mx-auto mb-4"></i>
+                    <h4 class="text-lg font-medium text-gray-900 mb-2">No recent sessions</h4>
+                    <p class="text-gray-500">Evaluation sessions will appear here once users start taking assessments.</p>
+                </div>
+            `;
+        } else {
+            const html = sessions.slice(0, 5).map(session => `
+                <div class="flex items-center justify-between py-3 border-b last:border-b-0">
+                    <div class="flex items-center space-x-3">
+                        <div class="flex-shrink-0">
+                            ${session.is_complete 
+                                ? '<div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center"><i data-lucide="check" class="w-4 h-4 text-green-600"></i></div>'
+                                : '<div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center"><i data-lucide="clock" class="w-4 h-4 text-yellow-600"></i></div>'
+                            }
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-900">${session.session_id.substring(0, 8)}...</p>
+                            <p class="text-sm text-gray-500">${formatDate(session.created_at)}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        ${session.final_evaluation 
+                            ? `<span class="badge badge-${getPerformanceBadgeClass(session.final_evaluation.overall_performance)}">${session.final_evaluation.overall_performance}</span>`
+                            : '<span class="badge badge-info">In Progress</span>'
+                        }
+                        <a href="/dashboard/session/${session.session_id}" class="text-blue-600 hover:text-blue-700">
+                            <i data-lucide="external-link" class="w-4 h-4"></i>
+                        </a>
+                    </div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = html;
+        }
+        
+        loading.classList.add('hidden');
+        container.classList.remove('hidden');
+        
+        // Re-initialize icons
+        lucide.createIcons();
+        
+    } catch (error) {
+        console.error('Error loading recent sessions:', error);
+        document.getElementById('recent-sessions-loading').innerHTML = `
+            <div class="text-center py-8">
+                <i data-lucide="alert-circle" class="w-6 h-6 text-red-400 mx-auto mb-2"></i>
+                <p class="text-red-500">Failed to load recent sessions</p>
+            </div>
+        `;
+    }
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function getPerformanceBadgeClass(performance) {
+    switch(performance) {
+        case 'Excellent': return 'success';
+        case 'Good': return 'info';
+        case 'Satisfactory': return 'warning';
+        default: return 'danger';
+    }
+}
+
+async function refreshData() {
+    const button = event.target;
+    const icon = button.querySelector('[data-lucide]');
+    
+    // Show loading state
+    icon.setAttribute('data-lucide', 'loader-2');
+    icon.classList.add('animate-spin');
+    lucide.createIcons();
+    
+    try {
+        // Reload the page to get fresh data
+        window.location.reload();
+    } catch (error) {
+        console.error('Error refreshing data:', error);
+        // Reset button state
+        icon.setAttribute('data-lucide', 'refresh-cw');
+        icon.classList.remove('animate-spin');
+        lucide.createIcons();
+    }
+}
+</script>
+{% endblock %} 
